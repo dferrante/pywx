@@ -13,6 +13,8 @@ import logging
 import collections
 import datetime
 import time
+import requests
+import simplejson
 import re
 
 from geopy.geocoders import GoogleV3
@@ -247,6 +249,29 @@ def alert(parseinfo):
             bot.privmsg(parseinfo['sender'], str(line))
         bot.privmsg(parseinfo['sender'], epoch_dt(alert['expires']).strftime('Expires: %Y-%m-%d %H:%M'))
 
+@catch_failure
+@smart_print_return
+def buttcoin(parseinfo):
+    resp = requests.get('http://api.bitcoincharts.com/v1/markets.json')
+    markets = resp.json()
+
+    mdict = {}
+    for market in markets:
+        mdict[market['symbol']] = market
+
+    symbol = "btceUSD"
+    if len(parseinfo['args']) > 1:
+        symbol = parseinfo['args'][1]
+    market = mdict.get(symbol, 'btceUSD')
+    inverse = round(1.0/market['close'], 5)
+    last_trade = epoch_dt(market['latest_trade'])
+    ago = (datetime.datetime.now()-last_trade).seconds
+    payload = ["%s (%s): Last: $%s ($1 = %s)" % (market['symbol'], market['currency'], market['close'], inverse),]
+    payload.append("/ High: $%s / Low: $%s / Volume: %s" % (market['high'], market['low'], int(market['volume'])))
+    payload.append("/ Bid: $%s / Ask: $%s / Last Trade: %s (%ss ago)" % (market['bid'], market['ask'],
+                                                                         last_trade.strftime("%Y-%m-%d %H:%M:%S"), ago))
+    return payload
+
 if __name__ == '__main__':
     config = {
         "host": "irc.slashnet.org",
@@ -266,7 +291,6 @@ if __name__ == '__main__':
         #"nick": "wx",
         #"ident": "wx",
         #"realname": "wx",
-        #"pass": "aslchat",
         #"chans": ["#oledevhaus"],
         #"admins": ["~mach5@cloak-FBE60E9A.hsd1.nj.comcast.net"],
         #"ownermask": "~mach5@cloak-FBE60E9A.hsd1.nj.comcast.net",
@@ -279,6 +303,7 @@ if __name__ == '__main__':
     bot.addCommand("wx", cwx, "all", 2)
     bot.addCommand("nwf", nwf, "all", 2)
     bot.addCommand("nwx", nwx, "all", 2)
+    bot.addCommand("buttcoin", buttcoin, "all", 2)
     bot.addCommand("alerts", alerts, "all", 2)
     bot.addCommand("alert", alert, "all", 2)
     bot.addCommand("ipdb", debug, "all", 2)
