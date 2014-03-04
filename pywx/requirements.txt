@@ -1,0 +1,8 @@
+argparse==1.2.1
+geopy==0.98.2
+ipdb==0.8
+ipython==1.2.1
+python-forecastio==0.1
+requests==2.2.1
+six==1.5.2
+wsgiref==0.1.2
