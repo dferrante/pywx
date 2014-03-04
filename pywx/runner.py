@@ -122,7 +122,12 @@ wind_chill_si = lambda t, ws: int(13.12 + (0.6215*t) - 11.37*(ws**0.16) + 0.3965
 wind_directions = [(11.25, 'N'),(33.75, 'NNE'),(56.25, 'NE'),(78.75, 'ENE'),(101.25, 'E'),(123.75, 'ESE'),
                    (146.25, 'SE'),(168.75, 'SSE'),(191.25, 'S'),(213.75, 'SSW'),(236.25, 'SW'),(258.75, 'WSW'),
                    (281.25, 'W'),(303.75, 'WNW'),(326.25, 'NW'),(348.75, 'NNW'),(360, 'N')]
-wind_direction = lambda bearing: [direction for deg, direction in wind_directions if deg >= bearing][0]
+first_greater_selector = lambda i, l: [r for c, r in l if c >= i][0]
+wind_direction = lambda bearing: first_greater_selector(bearing, wind_directions)
+mag_words = [(5,'Light'),(6,'Moderate'),(7,'Strong'),(8,'Major'),(9,'Great'),(10,'Catastrophic'),]
+mag_colors = [(5,'yellow'),(6,'orange'),(7,'red'),(8,'red'),(9,'red'),(10,'red'),]
+mag_word = lambda mag: first_greater_selector(mag, mag_words)
+mag_color = lambda mag: first_greater_selector(mag, mag_colors)
 
 
 def debug(parseinfo):
@@ -272,6 +277,43 @@ def buttcoin(parseinfo):
                                                                          last_trade.strftime("%Y-%m-%d %H:%M:%S"), ago))
     return payload
 
+global eqdb
+eqdb = None
+
+@catch_failure
+def earthquake_monitor(args):
+    global eqdb
+    resp = requests.get('http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson')
+    earthquakes = resp.json()['features']
+    if eqdb is None:
+        eqdb = []
+        for eq in earthquakes:
+            eqdb.append(eq['properties']['code'])
+
+    quakes = []
+    for eq in earthquakes:
+        if eq['properties']['code'] in eqdb:
+            continue
+        eqp = eq['properties']
+        magnitude = eqp.get('mag')
+        if not magnitude:
+            continue
+        descriptor = mag_word(float(magnitude))
+        color = mag_color(float(magnitude))
+        lat, lng, depth = eq['geometry']['coordinates']
+        region = eqp['place']
+        url = eqp['url']
+        time = epoch_dt(eqp['time']/1000)
+
+        quake = []
+        quake.append("A %s earthquake has occured. Magnitude: %s" % (cc(descriptor, color), cc("◼ %s".decode('utf-8') % magnitude, color)))
+        quake.append("Depth: %s km Region: %s Coordinates: %s, %s" % (depth, region, lat, lng))
+        quake.append("%s" % url)
+        quakes.append(' '.join(quake))
+
+    for quake in quakes:
+        bot.privmsg(args['chan'], quake)
+
 if __name__ == '__main__':
     config = {
         "host": "irc.slashnet.org",
@@ -298,15 +340,16 @@ if __name__ == '__main__':
     #}
     bot = pythabot.Pythabot(config)
 
-    bot.addCommand("botquit",quit,"owner",1)
-    bot.addCommand("wf", cwf, "all", 2)
-    bot.addCommand("wx", cwx, "all", 2)
-    bot.addCommand("nwf", nwf, "all", 2)
-    bot.addCommand("nwx", nwx, "all", 2)
-    bot.addCommand("buttcoin", buttcoin, "all", 2)
-    bot.addCommand("alerts", alerts, "all", 2)
-    bot.addCommand("alert", alert, "all", 2)
-    bot.addCommand("ipdb", debug, "all", 2)
-    bot.addCommand("colors", colors, "all", 2)
+    bot.addCommand("botquit",quit,"owner")
+    bot.addCommand("wf", cwf, "all")
+    bot.addCommand("wx", cwx, "all")
+    bot.addCommand("nwf", nwf, "all")
+    bot.addCommand("nwx", nwx, "all")
+    bot.addCommand("buttcoin", buttcoin, "all")
+    bot.addCommand("alerts", alerts, "all")
+    bot.addCommand("alert", alert, "all")
+    bot.addCommand("ipdb", debug, "all")
+    bot.addCommand("colors", colors, "all")
+    bot.addPeriodicCommand(earthquake_monitor)
     bot.connect()
     bot.listen()

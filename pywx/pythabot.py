@@ -2,6 +2,7 @@ import sys
 import socket
 import string
 import time
+import datetime
 import logging as log
 log.basicConfig(level=log.DEBUG)
 
@@ -14,6 +15,7 @@ class Pythabot:
         self.debounce2 = False
         self.commands = {}
         self.commandlist = []
+        self.periodiccommandlist = []
         self.sock = socket.socket()
 
     def connect(self):
@@ -30,11 +32,14 @@ class Pythabot:
             self.sendraw("USER %s %s bla :%s" % (self.config["ident"], self.config["host"], self.config["realname"]))
             log.info("Identified as %s" % self.config["nick"])
         except socket.error:
-            self.quit("Could not connect to port %s, on %s." % (self.config["port"] ,self.config["host"]))
+            self.quit("Could not connect to port %s, on %s." % (self.config["port"], self.config["host"]))
 
-    def addCommand(self,text,func,permission,arglength):
-        self.commands[text] = {"func":func,"permission":permission,"arglength":arglength}
+    def addCommand(self, text, func, permission):
+        self.commands[text] = {"func": func, "permission": permission}
         self.commandlist.append(text)
+
+    def addPeriodicCommand(self, func):
+        self.periodiccommandlist.append(func)
 
     def initparse(self,line):
         #[':techboy6601!~IceChat77@unaffiliated/techboy6601','PRIVMSG','#botters-test',':yo','wuts','up']
@@ -96,7 +101,9 @@ class Pythabot:
 
                     if line[0] == "PING":
                         self.sendraw("PONG %s" % line[1])
-                        log.debug("PONG %s" % line[1])
+                        log.debug("PONG %s %s" % (line[1], datetime.datetime.now()))
+                        for func in self.periodiccommandlist:
+                            func({'chan': '#mefi'})
 
                     if line[1] == "PRIVMSG":
                         self.initparse(line)
