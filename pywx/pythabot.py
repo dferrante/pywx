@@ -82,7 +82,7 @@ class Pythabot:
         try:
             while 1:
                 self.buffer = self.buffer + self.sock.recv(1024)
-                log.debug(self.buffer)
+                log.debug(self.buffer.strip())
                 if (("/MOTD" in self.buffer or 'End of message of the day' in self.buffer) and self.debounce == False):
                     for chan in self.config["chans"]:
                         self.sendraw("JOIN %s" % chan)
@@ -103,7 +103,8 @@ class Pythabot:
                         self.sendraw("PONG %s" % line[1])
                         log.debug("PONG %s %s" % (line[1], datetime.datetime.now()))
                         for func in self.periodiccommandlist:
-                            func({'chan': '#mefi'})
+                            for chan in self.config['chans']:
+                                func({'chan': chan})
 
                     if line[1] == "PRIVMSG":
                         self.initparse(line)
