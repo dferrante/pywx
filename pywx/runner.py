@@ -16,6 +16,7 @@ import time
 import requests
 import simplejson
 import re
+import pytz
 
 from geopy.geocoders import GoogleV3
 geoloc = GoogleV3()
@@ -23,6 +24,18 @@ geoloc = GoogleV3()
 fio_api_key = "0971c933da4dcd6e3fe4f01ccf62a90a"
 max_msg_len = 375
 
+config = {
+    "host": "irc.slashnet.org",
+    "port": 6667,
+    "nick": "wx",
+    "ident": "wx",
+    "realname": "wx",
+    "pass": "",
+    "chans": ["#mefi"],
+    "admins": ["~mach5@cloak-FBE60E9A.hsd1.nj.comcast.net"],
+    "ownermask": "~mach5@cloak-FBE60E9A.hsd1.nj.comcast.net",
+    "quitmsg": "peace out"
+}
 
 def quit(parseinfo):
     bot.quit("Quit")
@@ -113,8 +126,12 @@ def get_units(unitset):
         return unitobj('kph', 'km', 'C', 'mm/hr', 'cm', 'hPa')
     if unitset == 'uk':
         return unitobj('mph', 'km', 'C', 'mm/hr', 'cm', 'hPa')
+    logging.error('unknown units: %s' % unitset)
+    return unitobj('m/s', 'km', 'C', 'mm/hr', 'cm', 'hPa')
 
-epoch_dt = lambda e: datetime.datetime.fromtimestamp(e)
+
+epoch_dt = lambda ts: datetime.datetime.fromtimestamp(ts)
+epoch_tz_dt = lambda ts, tz='UTC': datetime.datetime.fromtimestamp(ts, tz=pytz.utc).astimezone(pytz.timezone(tz))
 to_celcius = lambda f: (f-32)*5/9
 to_fahrenheight = lambda c: (c*9/5)+32
 wind_chill = lambda t, ws: int(35.74 + (0.6215*t) - 35.75*(ws**0.16) + 0.4275*t*(ws**0.16))
@@ -124,7 +141,7 @@ wind_directions = [(11.25, 'N'),(33.75, 'NNE'),(56.25, 'NE'),(78.75, 'ENE'),(101
                    (281.25, 'W'),(303.75, 'WNW'),(326.25, 'NW'),(348.75, 'NNW'),(360, 'N')]
 first_greater_selector = lambda i, l: [r for c, r in l if c >= i][0]
 wind_direction = lambda bearing: first_greater_selector(bearing, wind_directions)
-mag_words = [(5,'Light'),(6,'Moderate'),(7,'Strong'),(8,'Major'),(9,'Great'),(10,'Catastrophic'),]
+mag_words = [(5,'light'),(6,'moderate'),(7,'STRONG'),(8,'MAJOR'),(9,'GREAT'),(10,'CATASTROPHIC'),]
 mag_colors = [(5,'yellow'),(6,'orange'),(7,'red'),(8,'red'),(9,'red'),(10,'red'),]
 mag_word = lambda mag: first_greater_selector(mag, mag_words)
 mag_color = lambda mag: first_greater_selector(mag, mag_colors)
@@ -274,7 +291,7 @@ def buttcoin(parseinfo):
     payload = ["%s (%s): Last: $%s ($1 = %s)" % (market['symbol'], market['currency'], market['close'], inverse),]
     payload.append("/ High: $%s / Low: $%s / Volume: %s" % (market['high'], market['low'], int(market['volume'])))
     payload.append("/ Bid: $%s / Ask: $%s / Last Trade: %s (%ss ago)" % (market['bid'], market['ask'],
-                                                                         last_trade.strftime("%Y-%m-%d %H:%M:%S"), ago))
+                                                                         last_trade.strftime("%Y-%m-%d %H:%M:%S EST"), ago))
     return payload
 
 global eqdb
@@ -290,54 +307,58 @@ def earthquake_monitor(args):
         for eq in earthquakes:
             eqdb.append(eq['properties']['code'])
 
-    quakes = []
     for eq in earthquakes:
         if eq['properties']['code'] in eqdb:
             continue
-        eqp = eq['properties']
-        magnitude = eqp.get('mag')
-        if not magnitude:
-            continue
-        descriptor = mag_word(float(magnitude))
-        color = mag_color(float(magnitude))
-        lat, lng, depth = eq['geometry']['coordinates']
-        region = eqp['place']
-        url = eqp['url']
-        time = epoch_dt(eqp['time']/1000)
+        else:
+            eqdb.append(eq['properties']['code'])
+        printquake(parseinfo['chan'], eq)
 
-        quake = []
-        quake.append("A %s earthquake has occured. Magnitude: %s" % (cc(descriptor, color), cc("◼ %s".decode('utf-8') % magnitude, color)))
-        quake.append("Depth: %s km Region: %s Coordinates: %s, %s" % (depth, region, lat, lng))
-        quake.append("%s" % url)
-        quakes.append(' '.join(quake))
+@catch_failure
+def lastquakes(parseinfo):
+    resp = requests.get('http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson')
+    earthquakes = resp.json()['features']
 
-    for quake in quakes:
-        bot.privmsg(args['chan'], quake)
+    for eq in earthquakes[:5]:
+        printquake(parseinfo['chan'], eq)
+
+@catch_failure
+def lastbigquakes(parseinfo):
+    resp = requests.get('http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson')
+    earthquakes = resp.json()['features']
+
+    for eq in earthquakes:
+        printquake(parseinfo['chan'], eq)
+
+def printquake(chan, eq):
+    eqp = eq['properties']
+    magnitude = eqp.get('mag')
+    if not magnitude:
+        return
+    descriptor = mag_word(float(magnitude))
+    color = mag_color(float(magnitude))
+    lat, lng, depth = eq['geometry']['coordinates']
+    region = eqp['place']
+    url = eqp['url']
+
+    localtime = datetime.datetime.fromtimestamp(eqp['time']/1000, tz=pytz.utc) + datetime.timedelta(minutes=eqp['tz'])
+    localtime = localtime.strftime('%m/%d %I:%M:%p')
+
+    timedelta = datetime.datetime.now() - epoch_dt(eqp['time']/1000)
+    h, m, s = timedelta.seconds/60/60, timedelta.seconds/60%60, timedelta.seconds%60%60
+    ago = '%sh%sm%ss' % (h,m,s) if h and m and s else '%sm%ss' % (m,s) if m and s else '%ss' % (s)
+
+    quake = []
+    quake.append("A %s earthquake has occured. Magnitude: %s" % (cc(descriptor, color), cc("◼ %s".decode('utf-8') % magnitude, color)))
+    quake.append("Depth: %s km Region: %s Local Time: %s (%s ago)" % (depth, region, localtime, ago))
+    if eqp['tsunami'] and int(eqp['tsunami']) == 1:
+        quake.append(cc('A tsunami may have been generated.', 'red'))
+    quake.append("%s" % url)
+
+    bot.privmsg(chan, ' '.join(quake))
+
 
 if __name__ == '__main__':
-    config = {
-        "host": "irc.slashnet.org",
-        "port": 6667,
-        "nick": "wx",
-        "ident": "wx",
-        "realname": "wx",
-        "pass": "",
-        "chans": ["#mefi"],
-        "admins": ["~mach5@cloak-FBE60E9A.hsd1.nj.comcast.net"],
-        "ownermask": "~mach5@cloak-FBE60E9A.hsd1.nj.comcast.net",
-        "quitmsg": "peace out"
-    }
-    #config = {
-        #"host": "irc.advance.net",
-        #"port": 6667,
-        #"nick": "wx",
-        #"ident": "wx",
-        #"realname": "wx",
-        #"chans": ["#oledevhaus"],
-        #"admins": ["~mach5@cloak-FBE60E9A.hsd1.nj.comcast.net"],
-        #"ownermask": "~mach5@cloak-FBE60E9A.hsd1.nj.comcast.net",
-        #"quitmsg": "peace out"
-    #}
     bot = pythabot.Pythabot(config)
 
     bot.addCommand("botquit",quit,"owner")
@@ -350,6 +371,8 @@ if __name__ == '__main__':
     bot.addCommand("alert", alert, "all")
     bot.addCommand("ipdb", debug, "all")
     bot.addCommand("colors", colors, "all")
+    bot.addCommand("lastquakes", lastquakes, "all")
+    bot.addCommand("lastbigquakes", lastbigquakes, "all")
     bot.addPeriodicCommand(earthquake_monitor)
     bot.connect()
     bot.listen()
