@@ -63,6 +63,8 @@ def smart_print_return(func):
         bot.privmsg(parseinfo['chan'], " ".join(msg))
     return wrapper
 
+airport = collections.namedtuple('Airport', '')
+
 latlong_re = re.compile(r'([0-9.-]+),([0-9.-]+)')
 
 def match_location(args):
@@ -298,7 +300,7 @@ global eqdb
 eqdb = None
 
 @catch_failure
-def earthquake_monitor(args):
+def earthquake_monitor(parseinfo):
     global eqdb
     resp = requests.get('http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson')
     earthquakes = resp.json()['features']
@@ -341,7 +343,7 @@ def printquake(chan, eq):
     region = eqp['place']
     url = eqp['url']
 
-    localtime = datetime.datetime.fromtimestamp(eqp['time']/1000, tz=pytz.utc) + datetime.timedelta(minutes=eqp['tz'])
+    localtime = datetime.datetime.fromtimestamp(eqp['time']/1000, tz=pytz.utc) + datetime.timedelta(minutes=eqp.get('tz', 0))
     localtime = localtime.strftime('%m/%d %I:%M:%p')
 
     timedelta = datetime.datetime.now() - epoch_dt(eqp['time']/1000)
