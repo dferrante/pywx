@@ -4,7 +4,7 @@ import string
 import time
 import datetime
 import logging as log
-log.basicConfig(level=log.DEBUG)
+log.basicConfig(level=log.WARNING)
 
 
 class Pythabot:

@@ -89,7 +89,7 @@ def match_location(args):
 
 cmap = {'black': '\x031','navy': '\x032','maroon': '\x035','green': '\x033','grey': '\x0314','royal': '\x0312','aqua': '\x0311',
         'lime': '\x039','silver': '\x0315','orange': '\x037','pink': '\x0313','purple': '\x036','red': '\x034','teal': '\x0310',
-        'white': '\x030','yellow': '\x038'}
+        'white': '\x030','yellow': '\x038','null': '\x03'}
 icon_colors = {
     'clear-day': 'white',
     'clear-night': 'white',
@@ -105,10 +105,10 @@ icon_colors = {
     'thunderstorm': 'red',
     'tornado': 'red'
 }
-cc = lambda s,c: "%s%s%s" % (cmap[c], s, cmap['white']) if c != 'white' else s
-pht = lambda t,u='F',c='royal': cc("⇑%s°%s".decode('utf-8') % (int(t), u), c)
-plt = lambda t,u='F',c='navy': cc("⇓%s°%s".decode('utf-8') % (int(t), u), c)
-pt = lambda t,u='F',c='white': "%s %s°%s%s".decode('utf-8') % (cmap[c], int(t), u, cmap['white']) if c != 'white' else " %s°%s".decode('utf-8') % (int(t), u)
+cc = lambda s,c: "%s%s%s" % (cmap[c], s, cmap['null']) if c != 'null' else s
+pht = lambda t,u='F',c='royal': cc("⇑ %s°%s".decode('utf-8') % (int(t), u), c)
+plt = lambda t,u='F',c='navy': cc("⇓ %s°%s".decode('utf-8') % (int(t), u), c)
+pt = lambda t,u='F',c='null': "%s %s°%s%s".decode('utf-8') % (cmap[c], int(t), u, cmap['null']) if c != 'null' else " %s°%s".decode('utf-8') % (int(t), u)
 ncc = lambda s: cc(s, 'orange')
 tcc = lambda s: cc(s, 'royal')
 icc = lambda s,i: cc(s, icon_colors[i])
@@ -212,7 +212,7 @@ def wx(parseinfo):
     if today.sunriseTime and today.sunsetTime:
         delta = today.sunsetTime - today.sunriseTime
         daytime = '%sh%sm' % (delta.seconds/60/60, delta.seconds/60%60)
-        payload.append('%s ⇑%s ⇓%s %s'.decode('utf-8') % (tcc('Sun:'), today.sunriseTime.strftime('%I:%M%p').lower(),
+        payload.append('%s ⇑ %s ⇓ %s %s'.decode('utf-8') % (tcc('Sun:'), today.sunriseTime.strftime('%I:%M%p').lower(),
                                                           today.sunsetTime.strftime('%I:%M%p').lower(), daytime))
 
     alerts = forecast.json['alerts'] if 'alerts' in forecast.json else None
@@ -302,7 +302,7 @@ eqdb = None
 @catch_failure
 def earthquake_monitor(parseinfo):
     global eqdb
-    resp = requests.get('http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson')
+    resp = requests.get('http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_hour.geojson')
     earthquakes = resp.json()['features']
     if eqdb is None:
         eqdb = []
