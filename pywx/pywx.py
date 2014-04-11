@@ -451,7 +451,7 @@ if __name__ == '__main__':
     bot.addCommand("buttcoin", buttcoin, "all")
     bot.addCommand("alerts", alerts, "all")
     bot.addCommand("alert", alert, "all")
-    bot.addCommand("ipdb", debug, "all")
+    bot.addCommand("ipdb", debug, "owner")
     bot.addCommand("colors", colors, "all")
     bot.addCommand("lastquakes", lastquakes, "all")
     bot.addCommand("lastbigquakes", lastbigquakes, "all")
