@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#These commands were created to help with channel administration.
-#It includes mode change, self OP, raw message, channel joins,
-#parts, kicks, a prefix changer, and even a start timer!
-
-
 import pythabot
 import forecastio
 import functools
@@ -17,6 +12,23 @@ import requests
 import simplejson
 import re
 import pytz
+import dataset
+import csv
+
+db = dataset.connect('sqlite:///pywx.db')
+usertable = db['users']
+
+#load airports
+airportcsv = csv.reader(open('airports.dat'))
+airport = collections.namedtuple('Airport', 'airport_id name city country faa icao lat long alt tz dst')
+airport_lookup = {}
+for ap in airportcsv:
+    ap = map(lambda x: '' if x == '\\N' else x, ap)
+    apo = airport(*ap)
+    if apo.faa and apo.faa != '\\N':
+        airport_lookup[apo.faa.lower()] = apo
+    if apo.icao and apo.icao != '\\N':
+        airport_lookup[apo.icao.lower()] = apo
 
 from geopy.geocoders import GoogleV3
 geoloc = GoogleV3()
@@ -63,21 +75,40 @@ def smart_print_return(func):
         bot.privmsg(parseinfo['chan'], " ".join(msg))
     return wrapper
 
-airport = collections.namedtuple('Airport', '')
 
 latlong_re = re.compile(r'([0-9.-]+),([0-9.-]+)')
 
-def match_location(args):
+def match_location(username, args):
     args = " ".join(args)
     name = ""
     lat, lng = 0,0
+    match = False
+
+    #db lookup
+    if not args:
+        user = usertable.find_one(user=username)
+        if user and user['place'] and user['latitude'] and user['longitude']:
+            return user['place'], user['latitude'], user['longitude']
 
     #latlong
-    match = latlong_re.match(args)
-    if match:
+    llmatch = latlong_re.match(args.lower())
+    if llmatch:
         name = "%s,%s" % (lat, lng)
-        lat, lng = match.groups()
-    else:
+        lat, lng = llmatch.groups()
+        match = True
+
+    airport = airport_lookup.get(args)
+    if not match and airport:
+        match = True
+        code = "(%s)" % ('/'.join(filter(lambda x: bool(x), [airport.faa, airport.icao])))
+        if airport.name == airport.city:
+            name = "%s, %s %s" % (airport.city, airport.country, code)
+        else:
+            name = "%s, %s, %s %s" % (airport.name, airport.city, airport.country, code)
+        lat = airport.lat
+        lng = airport.long
+
+    if not match:
         try:
             loc = geoloc.geocode(args)
             name = loc.address
@@ -85,6 +116,8 @@ def match_location(args):
             lng = loc.longitude
         except:
             return None, None, None
+
+    usertable.upsert(dict(user=username, place=name, latitude=lat, longitude=lng), ['user'])
     return name, lat, lng
 
 cmap = {'black': '\x031','navy': '\x032','maroon': '\x035','green': '\x033','grey': '\x0314','royal': '\x0312','aqua': '\x0311',
@@ -158,7 +191,7 @@ def colors(parseinfo):
 
 def wf(parseinfo):
     args = parseinfo['args'][1:]
-    name, lat, lng = match_location(args)
+    name, lat, lng = match_location(parseinfo['sender'], args)
     if not name and not lat and not lng:
         return ['No location matches found for: %s' % ' '.join(args),]
     forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
@@ -186,7 +219,7 @@ def cwf(parseinfo):
 
 def wx(parseinfo):
     args = parseinfo['args'][1:]
-    name, lat, lng = match_location(args)
+    name, lat, lng = match_location(parseinfo['sender'], args)
     if not name and not lat and not lng:
         return ['No location matches found for: %s' % ' '.join(args),]
     forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
@@ -232,12 +265,11 @@ def nwx(parseinfo):
 def cwx(parseinfo):
     return wx(parseinfo)
 
-
 @catch_failure
 @smart_print_return
 def alerts(parseinfo):
     args = parseinfo['args'][1:]
-    name, lat, lng = match_location(args)
+    name, lat, lng = match_location(parseinfo['sender'], args)
     forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
 
     payload = []
@@ -261,7 +293,7 @@ def alert(parseinfo):
         alert_index = alert_index.lstrip('#')
     alert_index = int(alert_index)
 
-    name, lat, lng = match_location(args)
+    name, lat, lng = match_location(parseinfo['sender'], args)
     forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
 
     alerts = forecast.json['alerts'] if 'alerts' in forecast.json else None
@@ -362,6 +394,15 @@ def printquake(chan, eq):
 @catch_failure
 @smart_print_return
 def housewx(parseinfo):
+    if parseinfo['sender'] == 'dmd':
+        json = requests.get('http://3e.org/nest/').json()
+        payload = ["House is at%s" % pt(json['current_state']['temperature']),]
+        payload.append("with the system in mode %s and" % (json['current_state']['mode']))
+        payload.append("set to%s. Time to target is %s." % (pt(json['target']['temperature']), json['target']['time_to_target']))
+        payload.append("Auto away is %s." % (json['current_state']['auto_away']))
+        payload.append("Manual away is %s." % (json['current_state']['manual_away']))
+        return payload
+
     auth = {
         'UserName': '',
         'Password': '',

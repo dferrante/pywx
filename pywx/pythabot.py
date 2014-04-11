@@ -4,7 +4,7 @@ import string
 import time
 import datetime
 import logging as log
-log.basicConfig(level=log.WARNING)
+log.basicConfig(level=log.DEBUG)
 
 
 class Pythabot:
@@ -44,7 +44,6 @@ class Pythabot:
     def initparse(self,line):
         #[':techboy6601!~IceChat77@unaffiliated/techboy6601','PRIVMSG','#botters-test',':yo','wuts','up']
         senderline = line[0]
-        chan = line[2]
         msg = " ".join(line[3:])
         msg = msg[1:]
         args = msg.split(" ")
@@ -55,6 +54,7 @@ class Pythabot:
         sender = senderline[1:exapoint]
         ident = senderline[tildepoint:atpoint-1]
         mask = senderline[atpoint:]
+        chan = line[2] if line[2] != self.config['nick'] else sender
 
         parseinfo = {
             "sender":sender,
