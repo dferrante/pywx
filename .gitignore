@@ -1,0 +1,11 @@
+bin
+include
+lib
+local
+share
+*.pyc
+*.wpr
+*.wpu
+*.db
+*~
+local_config.py
