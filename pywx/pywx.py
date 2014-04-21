@@ -347,7 +347,7 @@ def lastquake(parseinfo):
     resp = requests.get('http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson')
     earthquakes = resp.json()['features']
 
-    for eq in earthquakes[0]:
+    for eq in earthquakes[:1]:
         printquake(parseinfo['chan'], eq)
 
 def printquake(chan, eq):
