@@ -41,6 +41,11 @@ class Pythabot:
     def addPeriodicCommand(self, func):
         self.periodiccommandlist.append(func)
 
+    def runPeriodicCommands(self):
+        for func in self.periodiccommandlist:
+            for chan in self.config['chans']:
+                func({'chan': chan})
+
     def initparse(self,line):
         #[':techboy6601!~IceChat77@unaffiliated/techboy6601','PRIVMSG','#botters-test',':yo','wuts','up']
         senderline = line[0]
@@ -102,9 +107,7 @@ class Pythabot:
                     if line[0] == "PING":
                         self.sendraw("PONG %s" % line[1])
                         log.debug("PONG %s %s" % (line[1], datetime.datetime.now()))
-                        for func in self.periodiccommandlist:
-                            for chan in self.config['chans']:
-                                func({'chan': chan})
+                        self.runPeriodicCommands()
 
                     if line[1] == "PRIVMSG":
                         self.initparse(line)
