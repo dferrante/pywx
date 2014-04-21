@@ -14,6 +14,7 @@ import re
 import pytz
 import dataset
 import csv
+import sys
 
 db = dataset.connect('sqlite:///pywx.db')
 usertable = db['users']
@@ -36,18 +37,11 @@ geoloc = GoogleV3()
 fio_api_key = "0971c933da4dcd6e3fe4f01ccf62a90a"
 max_msg_len = 375
 
-config = {
-    "host": "irc.slashnet.org",
-    "port": 6667,
-    "nick": "wx",
-    "ident": "wx",
-    "realname": "wx",
-    "pass": "",
-    "chans": ["#mefi"],
-    "admins": ["~mach5@cloak-FBE60E9A.hsd1.nj.comcast.net"],
-    "ownermask": "~mach5@cloak-FBE60E9A.hsd1.nj.comcast.net",
-    "quitmsg": "peace out"
-}
+try:
+    from local_config import config
+except ImportError, e:
+    log.error('missing local_config.py')
+    sys.exit()
 
 def quit(parseinfo):
     bot.quit("Quit")
@@ -142,7 +136,7 @@ cc = lambda s,c: "%s%s%s" % (cmap[c], s, cmap['null']) if c != 'null' else s
 pht = lambda t,u='F',c='royal': cc("⇑ %s°%s".decode('utf-8') % (int(t), u), c)
 plt = lambda t,u='F',c='navy': cc("⇓ %s°%s".decode('utf-8') % (int(t), u), c)
 pt = lambda t,u='F',c='null': "%s %s°%s%s".decode('utf-8') % (cmap[c], int(t), u, cmap['null']) if c != 'null' else " %s°%s".decode('utf-8') % (int(t), u)
-ncc = lambda s: cc(s, 'orange')
+ncc = lambda s: cc(" %s" % s if s[0] in map(str, range(10)) else s, 'orange')
 tcc = lambda s: cc(s, 'royal')
 icc = lambda s,i: cc(s, icon_colors[i])
 
@@ -349,19 +343,11 @@ def earthquake_monitor(parseinfo):
         printquake(parseinfo['chan'], eq)
 
 @catch_failure
-def lastquakes(parseinfo):
-    resp = requests.get('http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson')
-    earthquakes = resp.json()['features']
-
-    for eq in earthquakes[:5]:
-        printquake(parseinfo['chan'], eq)
-
-@catch_failure
-def lastbigquakes(parseinfo):
+def lastquake(parseinfo):
     resp = requests.get('http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson')
     earthquakes = resp.json()['features']
 
-    for eq in earthquakes:
+    for eq in earthquakes[0]:
         printquake(parseinfo['chan'], eq)
 
 def printquake(chan, eq):
@@ -394,18 +380,9 @@ def printquake(chan, eq):
 @catch_failure
 @smart_print_return
 def housewx(parseinfo):
-    if parseinfo['sender'] == 'dmd':
-        json = requests.get('http://3e.org/nest/').json()
-        payload = ["House is at%s" % pt(json['current_state']['temperature']),]
-        payload.append("with the system in mode %s and" % (json['current_state']['mode']))
-        payload.append("set to%s. Time to target is %s." % (pt(json['target']['temperature']), json['target']['time_to_target']))
-        payload.append("Auto away is %s." % (json['current_state']['auto_away']))
-        payload.append("Manual away is %s." % (json['current_state']['manual_away']))
-        return payload
-
     auth = {
-        'UserName': '',
-        'Password': '',
+        'UserName': config['redlink_user'],
+        'Password': config['redlink_pass'],
         'RememberMe': 'true',
         'timeOffset': 240
     }
