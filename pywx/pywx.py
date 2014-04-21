@@ -218,6 +218,7 @@ def wx(parseinfo):
         return ['No location matches found for: %s' % ' '.join(args),]
     forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
     units = get_units(forecast.json['flags']['units'])
+    timezone = forecast.json['timezone']
     current = forecast.currently()
 
     payload = []
@@ -236,11 +237,16 @@ def wx(parseinfo):
     payload.append('%s %s %s' % (tcc('Pressure:'), int(current.pressure), units.press))
 
     today = forecast.daily().data[0]
+    sunrisets = forecast.json['daily']['data'][0]['sunriseTime']
+    sunsetts = forecast.json['daily']['data'][0]['sunriseTime']
     if today.sunriseTime and today.sunsetTime:
         delta = today.sunsetTime - today.sunriseTime
         daytime = '%sh%sm' % (delta.seconds/60/60, delta.seconds/60%60)
-        payload.append('%s ⇑ %s ⇓ %s %s'.decode('utf-8') % (tcc('Sun:'), today.sunriseTime.strftime('%I:%M%p').lower(),
-                                                          today.sunsetTime.strftime('%I:%M%p').lower(), daytime))
+        payload.append('%s ⇑ %s ⇓ %s %s'.decode('utf-8') % (
+            tcc('Sun:'),
+            epoch_tz_dt(sunrisets, timezone).strftime('%I:%M%p').lower(),
+            epoch_tz_dt(sunsetts, timezone).strftime('%I:%M%p').lower(),
+            daytime))
 
     alerts = forecast.json['alerts'] if 'alerts' in forecast.json else None
     if alerts:
