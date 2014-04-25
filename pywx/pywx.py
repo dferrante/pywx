@@ -243,7 +243,7 @@ def wx(parseinfo):
 
     today = forecast.daily().data[0]
     sunrisets = forecast.json['daily']['data'][0]['sunriseTime']
-    sunsetts = forecast.json['daily']['data'][0]['sunriseTime']
+    sunsetts = forecast.json['daily']['data'][0]['sunsetTime']
     if today.sunriseTime and today.sunsetTime:
         delta = today.sunsetTime - today.sunriseTime
         daytime = '%sh%sm' % (delta.seconds/60/60, delta.seconds/60%60)
@@ -283,7 +283,7 @@ def localtime(parseinfo):
 
     today = forecast.daily().data[0]
     sunrisets = forecast.json['daily']['data'][0]['sunriseTime']
-    sunsetts = forecast.json['daily']['data'][0]['sunriseTime']
+    sunsetts = forecast.json['daily']['data'][0]['sunsetTime']
     if today.sunriseTime and today.sunsetTime:
         delta = today.sunsetTime - today.sunriseTime
         daytime = '%sh%sm' % (delta.seconds/60/60, delta.seconds/60%60)
