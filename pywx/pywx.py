@@ -145,18 +145,18 @@ def color_strip(s):
         s = re.sub(code, '', s)
     return s
 
-unitobj = collections.namedtuple("UnitSet", 'wind, dist, temp, intensity, accum, press')
+unitobj = collections.namedtuple("UnitSet", 'wind, dist, temp, intensity, accum, press, time_fmt')
 def get_units(unitset):
     if unitset == 'us':
-        return unitobj('mph', 'mi', 'F', 'in/hr', 'in', 'mbar')
+        return unitobj('mph', 'mi', 'F', 'in/hr', 'in', 'mbar', '%I:%M:%S%p')
     if unitset == 'si':
-        return unitobj('m/s', 'km', 'C', 'mm/hr', 'cm', 'hPa')
+        return unitobj('m/s', 'km', 'C', 'mm/hr', 'cm', 'hPa', '%H:%M:%S')
     if unitset == 'ca':
-        return unitobj('kph', 'km', 'C', 'mm/hr', 'cm', 'hPa')
+        return unitobj('kph', 'km', 'C', 'mm/hr', 'cm', 'hPa', '%H:%M:%S')
     if unitset == 'uk':
-        return unitobj('mph', 'km', 'C', 'mm/hr', 'cm', 'hPa')
+        return unitobj('mph', 'km', 'C', 'mm/hr', 'cm', 'hPa', '%H:%M:%S')
     logging.error('unknown units: %s' % unitset)
-    return unitobj('m/s', 'km', 'C', 'mm/hr', 'cm', 'hPa')
+    return unitobj('m/s', 'km', 'C', 'mm/hr', 'cm', 'hPa', '%H:%M:%S')
 
 
 epoch_dt = lambda ts: datetime.datetime.fromtimestamp(ts)
@@ -168,8 +168,13 @@ wind_chill_si = lambda t, ws: int(13.12 + (0.6215*t) - 11.37*(ws**0.16) + 0.3965
 wind_directions = [(11.25, 'N'),(33.75, 'NNE'),(56.25, 'NE'),(78.75, 'ENE'),(101.25, 'E'),(123.75, 'ESE'),
                    (146.25, 'SE'),(168.75, 'SSE'),(191.25, 'S'),(213.75, 'SSW'),(236.25, 'SW'),(258.75, 'WSW'),
                    (281.25, 'W'),(303.75, 'WNW'),(326.25, 'NW'),(348.75, 'NNW'),(360, 'N')]
+moon_phases = [
+    (0.0625, 'New'),(0.1875, 'Waxing Crescent'),(0.3125, 'First Quarter'),(0.4375, 'Waxing Gibbous'),(0.5625, 'Full'),
+    (0.6875, 'Waning Gibbous'),(0.8125, 'Last Quarter'),(0.9375, 'Waning Crescent'),(1, 'New'),
+]
 first_greater_selector = lambda i, l: [r for c, r in l if c >= i][0]
 wind_direction = lambda bearing: first_greater_selector(bearing, wind_directions)
+moon_phase = lambda lunation_frac: first_greater_selector(lunation_frac, moon_phases)
 mag_words = [(5,'light'),(6,'moderate'),(7,'STRONG'),(8,'MAJOR'),(9,'GREAT'),(10,'CATASTROPHIC'),]
 mag_colors = [(5,'yellow'),(6,'orange'),(7,'red'),(8,'red'),(9,'red'),(10,'red'),]
 mag_word = lambda mag: first_greater_selector(mag, mag_words)
@@ -242,10 +247,10 @@ def wx(parseinfo):
     if today.sunriseTime and today.sunsetTime:
         delta = today.sunsetTime - today.sunriseTime
         daytime = '%sh%sm' % (delta.seconds/60/60, delta.seconds/60%60)
-        payload.append('%s ⇑ %s ⇓ %s %s'.decode('utf-8') % (
+        payload.append('%s ☀ %s ☽ %s %s'.decode('utf-8') % (
             tcc('Sun:'),
-            epoch_tz_dt(sunrisets, timezone).strftime('%I:%M%p').lower(),
-            epoch_tz_dt(sunsetts, timezone).strftime('%I:%M%p').lower(),
+            epoch_tz_dt(sunrisets, timezone).strftime(units.time_fmt).lower(),
+            epoch_tz_dt(sunsetts, timezone).strftime(units.time_fmt).lower(),
             daytime))
 
     alerts = forecast.json['alerts'] if 'alerts' in forecast.json else None
@@ -264,6 +269,41 @@ def nwx(parseinfo):
 @smart_print_return
 def cwx(parseinfo):
     return wx(parseinfo)
+
+@catch_failure
+@smart_print_return
+def localtime(parseinfo):
+    args = parseinfo['args'][1:]
+    name, lat, lng = match_location(parseinfo['sender'], args)
+    if not name and not lat and not lng:
+        return ['No location matches found for: %s' % ' '.join(args),]
+    forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
+    units = get_units(forecast.json['flags']['units'])
+    timezone = forecast.json['timezone']
+
+    today = forecast.daily().data[0]
+    sunrisets = forecast.json['daily']['data'][0]['sunriseTime']
+    sunsetts = forecast.json['daily']['data'][0]['sunriseTime']
+    if today.sunriseTime and today.sunsetTime:
+        delta = today.sunsetTime - today.sunriseTime
+        daytime = '%sh%sm' % (delta.seconds/60/60, delta.seconds/60%60)
+        sun = '☀ %s ☽ %s %s'.decode('utf-8') % (
+            epoch_tz_dt(sunrisets, timezone).strftime('%I:%M%p').lower(),
+            epoch_tz_dt(sunsetts, timezone).strftime('%I:%M%p').lower(),
+            daytime,
+        )
+
+    now = time.time()
+    currtime = epoch_tz_dt(now, timezone).strftime("%%Y-%%m-%%d %s %%Z (%%z)" % units.time_fmt)
+    utctime = epoch_tz_dt(now).strftime("%s %%Z" % units.time_fmt)
+
+    moon = moon_phase(forecast.json['daily']['data'][0]['moonPhase'])
+
+    payload = [
+        "%s: %s (%s)" % (ncc(name), currtime, utctime),
+        "%s %s %s %s" % (tcc('Sun:'), sun, tcc('Moon:'), moon),
+    ]
+    return payload
 
 @catch_failure
 @smart_print_return
@@ -425,7 +465,7 @@ def housewx(parseinfo):
 if __name__ == '__main__':
     bot = pythabot.Pythabot(config)
 
-    bot.addCommand("botquit",quit,"owner")
+    bot.addCommand("die", quit, "owner")
     bot.addCommand("wf", cwf, "all")
     bot.addCommand("wx", cwx, "all")
     bot.addCommand("nwf", nwf, "all")
