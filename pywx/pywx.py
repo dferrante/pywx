@@ -140,6 +140,7 @@ alert_colors = (
     ('chill', 'royal'),
     ('ice', 'royal'),
     ('flood', 'navy'),
+    ('fog', 'grey'),
     ('wind', 'aqua'),
     ('special', 'null'),
 )
