@@ -132,6 +132,17 @@ icon_colors = {
     'thunderstorm': 'red',
     'tornado': 'red'
 }
+alert_colors = (
+    ('tornado', 'red'),
+    ('thunder', 'yellow'),
+    ('hail', 'pink'),
+    ('winter', 'purple'),
+    ('chill', 'royal'),
+    ('ice', 'royal'),
+    ('flood', 'navy'),
+    ('wind', 'aqua'),
+    ('special', 'null'),
+)
 cc = lambda s,c: "%s%s%s" % (cmap[c], s, cmap['null']) if c != 'null' else s
 pht = lambda t,u='F',c='royal': cc("⇑ %s°%s".decode('utf-8') % (int(t), u), c)
 plt = lambda t,u='F',c='navy': cc("⇓ %s°%s".decode('utf-8') % (int(t), u), c)
@@ -256,7 +267,12 @@ def wx(parseinfo):
     alerts = forecast.json['alerts'] if 'alerts' in forecast.json else None
     if alerts:
         payload.append('%s' % cc('Alerts:', 'red'))
-        payload.append(", ".join(['#%s: %s' % (c+1, cc(a['title'], 'orange')) for c, a in enumerate(alerts)]))
+        alertlist = []
+        for count, alert in enumerate(alerts):
+            colormatches = [c for m,c in alert_colors if m in alert['title'].lower()]
+            color = colormatches[0] if colormatches else 'orange'
+            alertlist.append('#%s: %s' % (count+1, cc(alert['title'], color)))
+        payload.append(", ".join(alertlist))
 
     return payload
 
@@ -470,7 +486,7 @@ if __name__ == '__main__':
     bot.addCommand("wx", cwx, "all")
     bot.addCommand("nwf", nwf, "all")
     bot.addCommand("nwx", nwx, "all")
-    bot.addCommand('time', localtime, "all")
+    bot.addCommand('wxtime', localtime, "all")
     bot.addCommand('sun', localtime, "all")
     bot.addCommand('moon', localtime, "all")
     bot.addCommand("housewx", housewx, "all")
