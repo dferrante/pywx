@@ -190,6 +190,8 @@ mag_words = [(5,'light'),(6,'moderate'),(7,'STRONG'),(8,'MAJOR'),(9,'GREAT'),(10
 mag_colors = [(5,'yellow'),(6,'orange'),(7,'red'),(8,'red'),(9,'red'),(10,'red'),]
 mag_word = lambda mag: first_greater_selector(mag, mag_words)
 mag_color = lambda mag: first_greater_selector(mag, mag_colors)
+km_to_miles = lambda km: round(float(int(km)*0.621371), 1)
+label_km_to_miles = lambda s: re.sub('[0-9.]+\s?km', '%s (%smi)' % (re.compile('([0-9.]+)\s?km').match(s).group(0), km_to_miles(re.compile('([0-9.]+)\s?km').match(s).group(1))), s)
 
 
 def debug(parseinfo):
@@ -431,8 +433,11 @@ def printquake(chan, eq):
     ago = '%sh%sm%ss' % (h,m,s) if h and m and s else '%sm%ss' % (m,s) if m and s else '%ss' % (s)
 
     quake = []
-    quake.append("A %s earthquake has occured. Magnitude: %s" % (cc(descriptor, color), cc("◼ %s".decode('utf-8') % magnitude, color)))
-    quake.append("Depth: %s km Region: %s Local Time: %s (%s ago)" % (depth, region, localtime, ago))
+    quake.append("A %s earthquake has occured." % cc(descriptor, color))
+    quake.append("%s %s" % (tcc('Magnitude:'), cc("◼ %s".decode('utf-8') % magnitude, color)))
+    quake.append("%s %skm (%smi)" % (tcc('Depth:'), depth, km_to_miles(depth)))
+    quake.append("%s %s" % (tcc('Region:'), label_km_to_miles(region)))
+    quake.append("%s %s (%s ago)" % (tcc('Local Time:'), localtime, ago))
     if eqp['tsunami'] and int(eqp['tsunami']) == 1:
         quake.append(cc('A tsunami may have been generated.', 'red'))
     quake.append("%s" % url)
