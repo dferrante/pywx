@@ -16,32 +16,32 @@ import dataset
 import csv
 import sys
 
-db = dataset.connect('sqlite:///pywx.db')
+try:
+    from local_config import config
+except ImportError, e:
+    log.error('missing local_config.py')
+    sys.exit()
+
+db = dataset.connect(config['database'])
 usertable = db['users']
 
 #load airports
-airportcsv = csv.reader(open('airports.dat'))
-airport = collections.namedtuple('Airport', 'airport_id name city country faa icao lat long alt tz dst')
 airport_lookup = {}
-for ap in airportcsv:
-    ap = map(lambda x: '' if x == '\\N' else x, ap)
-    apo = airport(*ap)
-    if apo.faa and apo.faa != '\\N':
-        airport_lookup[apo.faa.lower()] = apo
-    if apo.icao and apo.icao != '\\N':
-        airport_lookup[apo.icao.lower()] = apo
+if config['airportdb']:
+    airport = collections.namedtuple('Airport', 'airport_id name city country faa icao lat long alt tz dst')
+    for ap in csv.reader(open(config['airportdb'])):
+        ap = map(lambda x: '' if x == '\\N' else x, ap)
+        apo = airport(*ap)
+        if apo.faa and apo.faa != '\\N':
+            airport_lookup[apo.faa.lower()] = apo
+        if apo.icao and apo.icao != '\\N':
+            airport_lookup[apo.icao.lower()] = apo
 
 from geopy.geocoders import GoogleV3
 geoloc = GoogleV3()
 
 fio_api_key = "0971c933da4dcd6e3fe4f01ccf62a90a"
 max_msg_len = 375
-
-try:
-    from local_config import config
-except ImportError, e:
-    log.error('missing local_config.py')
-    sys.exit()
 
 def quit(parseinfo):
     bot.quit("Quit")
