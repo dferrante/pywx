@@ -1,4 +1,6 @@
 config = {
+    "database": "sqlite:///pywx.db",
+    "airportdb": "airports.db",
     "host": "irc.server.org",
     "port": 6667,
     "nick": "wx",
