@@ -173,6 +173,7 @@ def get_units(unitset):
 
 epoch_dt = lambda ts: datetime.datetime.fromtimestamp(ts)
 epoch_tz_dt = lambda ts, tz='UTC': datetime.datetime.fromtimestamp(ts, tz=pytz.utc).astimezone(pytz.timezone(tz))
+hms = lambda s: ''.join(['%s%s' % (n,l) for n,l in filter(lambda x: bool(x[0]), [(s/60/60, 'h'), (s/60%60, 'm'), (s%60%60, 's')])])
 to_celcius = lambda f: (f-32)*5/9
 to_fahrenheight = lambda c: (c*9/5)+32
 wind_chill = lambda t, ws: int(35.74 + (0.6215*t) - 35.75*(ws**0.16) + 0.4275*t*(ws**0.16))
@@ -266,13 +267,11 @@ def wx(parseinfo):
     sunrisets = forecast.json['daily']['data'][0]['sunriseTime']
     sunsetts = forecast.json['daily']['data'][0]['sunsetTime']
     if today.sunriseTime and today.sunsetTime:
-        delta = today.sunsetTime - today.sunriseTime
-        daytime = '%sh%sm' % (delta.seconds/60/60, delta.seconds/60%60)
         payload.append('%s ☀ %s ☽ %s %s'.decode('utf-8') % (
             tcc('Sun:'),
             epoch_tz_dt(sunrisets, timezone).strftime(units.time_fmt).lower(),
             epoch_tz_dt(sunsetts, timezone).strftime(units.time_fmt).lower(),
-            daytime))
+            hms((today.sunsetTime - today.sunriseTime).seconds)))
 
     alerts = forecast.json['alerts'] if 'alerts' in forecast.json else None
     if alerts:
@@ -311,12 +310,10 @@ def localtime(parseinfo):
     sunrisets = forecast.json['daily']['data'][0]['sunriseTime']
     sunsetts = forecast.json['daily']['data'][0]['sunsetTime']
     if today.sunriseTime and today.sunsetTime:
-        delta = today.sunsetTime - today.sunriseTime
-        daytime = '%sh%sm' % (delta.seconds/60/60, delta.seconds/60%60)
         sun = '☀ %s ☽ %s %s'.decode('utf-8') % (
             epoch_tz_dt(sunrisets, timezone).strftime('%I:%M%p').lower(),
             epoch_tz_dt(sunsetts, timezone).strftime('%I:%M%p').lower(),
-            daytime,
+            hms((today.sunsetTime - today.sunriseTime).seconds),
         )
 
     now = time.time()
@@ -387,10 +384,10 @@ def buttcoin(parseinfo):
     market = mdict.get(symbol, 'btceUSD')
     inverse = round(1.0/market['close'], 5)
     last_trade = epoch_dt(market['latest_trade'])
-    ago = (datetime.datetime.now()-last_trade).seconds
+    ago = hms((datetime.datetime.now()-last_trade).seconds)
     payload = ["%s (%s): Last: $%s ($1 = %s)" % (market['symbol'], market['currency'], market['close'], inverse),]
     payload.append("/ High: $%s / Low: $%s / Volume: %s" % (market['high'], market['low'], int(market['volume'])))
-    payload.append("/ Bid: $%s / Ask: $%s / Last Trade: %s (%ss ago)" % (market['bid'], market['ask'],
+    payload.append("/ Bid: $%s / Ask: $%s / Last Trade: %s (%s ago)" % (market['bid'], market['ask'],
                                                                          last_trade.strftime("%Y-%m-%d %H:%M:%S EST"), ago))
     return payload
 
@@ -433,12 +430,12 @@ def printquake(chan, eq):
     region = eqp['place']
     url = eqp['url']
 
-    localtime = datetime.datetime.fromtimestamp(eqp['time']/1000, tz=pytz.utc) + datetime.timedelta(minutes=eqp.get('tz', 0))
+    localtime = datetime.datetime.fromtimestamp(eqp['time']/1000, tz=pytz.utc)
+    if eqp.get('tz'):
+        localtime += datetime.timedelta(minutes=eqp.get('tz', 0))
     localtime = localtime.strftime('%m/%d %I:%M:%p')
 
-    timedelta = datetime.datetime.now() - epoch_dt(eqp['time']/1000)
-    h, m, s = timedelta.seconds/60/60, timedelta.seconds/60%60, timedelta.seconds%60%60
-    ago = '%sh%sm%ss' % (h,m,s) if h and m and s else '%sm%ss' % (m,s) if m and s else '%ss' % (s)
+    ago = hms((datetime.datetime.now() - epoch_dt(eqp['time']/1000)).seconds)
 
     quake = []
     quake.append("A %s earthquake has occured." % cc(descriptor, color))
