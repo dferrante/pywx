@@ -269,9 +269,9 @@ def wx(parseinfo):
     payload.append('%s %s %s' % (tcc('Pressure:'), int(current.pressure), units.press))
 
     today = forecast.daily().data[0]
-    sunrisets = forecast.json['daily']['data'][0]['sunriseTime']
-    sunsetts = forecast.json['daily']['data'][0]['sunsetTime']
-    if today.sunriseTime and today.sunsetTime:
+    sunrisets = forecast.json['daily']['data'][0].get('sunriseTime')
+    sunsetts = forecast.json['daily']['data'][0].get('sunsetTime')
+    if today.sunriseTime and today.sunsetTime and sunrisets and sunsetts:
         payload.append('%s ☀ %s ☽ %s %s'.decode('utf-8') % (
             tcc('Sun:'),
             epoch_tz_dt(sunrisets, timezone).strftime(units.time_fmt).lower(),
@@ -312,9 +312,9 @@ def localtime(parseinfo):
     timezone = forecast.json['timezone']
 
     today = forecast.daily().data[0]
-    sunrisets = forecast.json['daily']['data'][0]['sunriseTime']
-    sunsetts = forecast.json['daily']['data'][0]['sunsetTime']
-    if today.sunriseTime and today.sunsetTime:
+    sunrisets = forecast.json['daily']['data'][0].get('sunriseTime')
+    sunsetts = forecast.json['daily']['data'][0].get('sunsetTime')
+    if today.sunriseTime and today.sunsetTime and sunrisets and sunsetts:
         sun = '☀ %s ☽ %s %s'.decode('utf-8') % (
             epoch_tz_dt(sunrisets, timezone).strftime('%I:%M%p').lower(),
             epoch_tz_dt(sunsetts, timezone).strftime('%I:%M%p').lower(),
