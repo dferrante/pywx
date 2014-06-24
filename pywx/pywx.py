@@ -174,19 +174,17 @@ def get_units(unitset):
 epoch_dt = lambda ts: datetime.datetime.fromtimestamp(ts)
 epoch_tz_dt = lambda ts, tz='UTC': datetime.datetime.fromtimestamp(ts, tz=pytz.utc).astimezone(pytz.timezone(tz))
 hms = lambda s: ''.join(['%s%s' % (n,l) for n,l in filter(lambda x: bool(x[0]), [(s/60/60, 'h'), (s/60%60, 'm'), (s%60%60, 's')])])
-to_celcius = lambda f: (f-32)*5/9
-to_fahrenheight = lambda c: (c*9/5)+32
+to_celcius = lambda f: (f-32)*5.0/9.0
+to_fahrenheight = lambda c: (c*9.0/5.0)+32
 wind_chill = lambda t, ws: int(35.74 + (0.6215*t) - 35.75*(ws**0.16) + 0.4275*t*(ws**0.16))
 wind_chill_si = lambda t, ws: int(13.12 + (0.6215*t) - 11.37*(ws**0.16) + 0.3965*t*(ws**0.16))
 wind_directions = [(11.25, 'N'),(33.75, 'NNE'),(56.25, 'NE'),(78.75, 'ENE'),(101.25, 'E'),(123.75, 'ESE'),
                    (146.25, 'SE'),(168.75, 'SSE'),(191.25, 'S'),(213.75, 'SSW'),(236.25, 'SW'),(258.75, 'WSW'),
                    (281.25, 'W'),(303.75, 'WNW'),(326.25, 'NW'),(348.75, 'NNW'),(360, 'N')]
+hic = [0,-42.379,2.04901523,10.14333127,-0.22475541,-6.83783*(10.0**-3.0),-5.481717*(10.0**-2.0),1.22874*(10.0**-3.0),8.5282*(10.0**-4.0),-1.99*(10.0**-6.0)]
+heat_index = lambda t,r: round(hic[1]+(hic[2]*t)+(hic[3]*r)+(hic[4]*t*r)+(hic[5]*(t**2))+(hic[6]*(r**2))+(hic[7]*(t**2)*r)+(hic[8]*t*(r**2))+(hic[9]*(t**2)*(r**2)), 1)
+heat_index_si = lambda t,r: round(to_celcius(heat_index(to_fahrenheight(t), r)), 1)
 
-heat_index = lambda t,r: hic[1] + hic[2]*t + hic[3]*r + hic[4]*t*r + hic[5]*(t**2) + hic[6]*(r**2) + hic[7]*(t**2)*r + hic[8]*t*(r**2) + \
-    hic[9]*(t**2)*(r**2) + hic[10]*(t**3) + hic[11]*(r**3) + hic[12]*(t**3)*r + hic[13]*t*(r**3) + hic[14]*(t**3)*(r**2) + hic[15]*(t**2)*(r**3) + hic[16]*(t**3)*(r**3)
-hic = (0, 16.923, 0.185212, 5.37941, -0.100254,  9.41695 *10**-3, 7.28898 *10**-37, 3.45372*10**-4, -8.14971 *10**-4,
-       1.02102 *10**-5, -3.8646 *10**-5, 2.91583 *10**-5, 1.42721 *10**-6, 1.97483 *10**-7, -2.18429 *10**-8,
-       8.43296 *10**-10, -4.81975 *10**-11)
 
 moon_phases = [
     (0.0625, 'New'),(0.1875, 'Waxing Crescent'),(0.3125, 'First Quarter'),(0.4375, 'Waxing Gibbous'),(0.5625, 'Full'),
@@ -252,10 +250,17 @@ def wx(parseinfo):
     payload.append('%s: %s%s' % (ncc(name), icc(current.summary, current.icon), pt(current.temperature, units.temp)))
     if current.temperature < 50 and current.windspeed > 3 and units.temp == "F":
         wc = wind_chill(current.temperature, current.windspeed)
-        payload.append('%s%s' % (tcc('Wind Chill:'), pt(wc, units.temp)))
+        payload.append('%s%s' % (cc('Wind Chill:', 'navy'), pt(wc, units.temp)))
     if current.temperature < 10 and current.windspeed > 5 and units.temp == "C":
         wc = wind_chill_si(current.temperature, current.windspeed)
-        payload.append('%s%s' % (tcc('Wind Chill:'), pt(wc, units.temp)))
+        payload.append('%s%s' % (cc('Wind Chill:', 'navy'), pt(wc, units.temp)))
+
+    if current.temperature > 80 and current.humidity > .4 and units.temp == "F":
+        hi = heat_index(current.temperature, current.humidity*100)
+        payload.append('%s%s' % (cc('Heat Index:', 'red'), pt(hi, units.temp)))
+    if current.temperature > 26.6 and current.humidity > .4 and units.temp == "C":
+        hi = heat_index_si(current.temperature, current.humidity*100)
+        payload.append('%s%s' % (cc('Heat Index:', 'red'), pt(hi, units.temp)))
 
     payload.append('%s %s%s from %s' % (tcc('Winds:'), int(current.windspeed), units.wind, wind_direction(current.windbaring)))
     payload.append('%s %s%%' % (tcc('Clouds:'), int(current.cloudcover)*100))
