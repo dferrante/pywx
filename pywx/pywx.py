@@ -87,8 +87,8 @@ def match_location(username, args):
     #latlong
     llmatch = latlong_re.match(args.lower())
     if llmatch:
-        name = "%s,%s" % (lat, lng)
         lat, lng = llmatch.groups()
+        name = "%s,%s" % (lat, lng)
         match = True
 
     airport = airport_lookup.get(args)
