@@ -15,6 +15,7 @@ import pytz
 import dataset
 import csv
 import sys
+import urllib
 
 try:
     from local_config import config
@@ -57,18 +58,24 @@ def catch_failure(func):
     return wrapper
 
 def smart_print_return(func):
+    def clean_message(msg):
+        fullmsg = " ".join(msg)
+        for name, code in sorted(cmap.items(), key=lambda x: len(x[0]), reverse=True):
+            fullmsg = re.sub(' %s ' % code, '%s ' % code, fullmsg)
+            fullmsg = re.sub('%s%s' % (cmap['null'], code), '%s ' % code, fullmsg)
+        return fullmsg
+
     @functools.wraps(func)
     def wrapper(parseinfo):
         payload = func(parseinfo)
         msg = []
         for word in ' '.join(payload).split(' '):
             msg.append(word)
-            if sum(map(len, msg)) > max_msg_len:
-                bot.privmsg(parseinfo['chan'], " ".join(msg[:-1]))
+            if sum(map(len, clean_message(msg))) > max_msg_len:
+                bot.privmsg(parseinfo['chan'], clean_message(msg[:-1]))
                 msg = [word]
-        bot.privmsg(parseinfo['chan'], " ".join(msg))
+        bot.privmsg(parseinfo['chan'], clean_message(msg))
     return wrapper
-
 
 latlong_re = re.compile(r'([0-9.-]+),([0-9.-]+)')
 
@@ -144,7 +151,7 @@ alert_colors = (
     ('wind', 'aqua'),
     ('special', 'null'),
 )
-cc = lambda s,c: "%s%s%s" % (cmap[c], s, cmap['null']) if c != 'null' else s
+cc = lambda s,c,sp=False: "%s%s%s%s" % (cmap[c], ' ' if sp else '', s, cmap['null']) if c != 'null' else s
 pht = lambda t,u='F',c='royal': cc("⇑ %s°%s".decode('utf-8') % (int(t), u), c)
 plt = lambda t,u='F',c='navy': cc("⇓ %s°%s".decode('utf-8') % (int(t), u), c)
 pt = lambda t,u='F',c='null': "%s %s°%s%s".decode('utf-8') % (cmap[c], int(t), u, cmap['null']) if c != 'null' else " %s°%s".decode('utf-8') % (int(t), u)
@@ -235,6 +242,34 @@ def nwf(parseinfo):
 @smart_print_return
 def cwf(parseinfo):
     return wf(parseinfo)
+
+def hwf(parseinfo):
+    args = parseinfo['args'][1:]
+    name, lat, lng = match_location(parseinfo['sender'], args)
+    if not name and not lat and not lng:
+        return ['No location matches found for: %s' % ' '.join(args),]
+    forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
+    units = get_units(forecast.json['flags']['units'])
+
+    payload = ['%s:' % ncc(name)]
+    for d in forecast.hourly().data[:12]:
+        nicedate = "%s%s" % (int(d.time.strftime('%I')), d.time.strftime('%p').lower())
+        payload.append("%s: %s%s".decode('utf-8') % (
+            cc(nicedate, 'maroon', True),
+            icc(d.summary, d.icon),
+            pt(d.temperature, units.temp),
+        ))
+    return payload
+
+@catch_failure
+@smart_print_return
+def nhwf(parseinfo):
+    return map(color_strip, hwf(parseinfo))
+
+@catch_failure
+@smart_print_return
+def chwf(parseinfo):
+    return hwf(parseinfo)
 
 def wx(parseinfo):
     args = parseinfo['args'][1:]
@@ -375,6 +410,40 @@ def alert(parseinfo):
 
 @catch_failure
 @smart_print_return
+def radar(parseinfo):
+    args = parseinfo['args'][1:]
+    name, lat, lng = match_location(parseinfo['sender'], args)
+    if not name and not lat and not lng:
+        return ['No location matches found for: %s' % ' '.join(args),]
+    forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
+    units = get_units(forecast.json['flags']['units'])
+    timezone = forecast.json['timezone']
+
+    payload = []
+    radarpayload = {
+        'rid': 'NAT',
+        'pid': 'N0Q',
+        'lat': lat,
+        'lon': lng,
+        'frames': 10,
+        'zoom': 8,
+        'fs': '0',
+    }
+    radarlink = 'http://www.srh.noaa.gov/ridge2/ridgenew2/?%s' % (urllib.urlencode(radarpayload))
+    payload.append("%s %s" % (tcc('Radar:'), radarlink))
+
+    sparkpayload = {
+        'lat': round(lat, 3),
+        'lon': round(lng ,3),
+        'timeZone': timezone,
+        'unit': units.dist,
+    }
+    sparkradarlink = 'http://weatherspark.com/forecasts/sparkRadar?%s' % (urllib.urlencode(sparkpayload))
+    payload.append("%s %s" % (tcc('Spark Radar:'), sparkradarlink))
+    return payload
+
+@catch_failure
+@smart_print_return
 def buttcoin(parseinfo):
     resp = requests.get('http://api.bitcoincharts.com/v1/markets.json')
     markets = resp.json()
@@ -498,13 +567,16 @@ if __name__ == '__main__':
 
     bot.addCommand("die", quit, "owner")
     bot.addCommand("wf", cwf, "all")
-    bot.addCommand("wx", cwx, "all")
     bot.addCommand("nwf", nwf, "all")
+    bot.addCommand("hf", chwf, "all")
+    bot.addCommand("nhf", nhwf, "all")
+    bot.addCommand("wx", cwx, "all")
     bot.addCommand("nwx", nwx, "all")
     bot.addCommand('wxtime', localtime, "all")
     bot.addCommand('sun', localtime, "all")
     bot.addCommand('moon', localtime, "all")
     bot.addCommand("housewx", housewx, "all")
+    bot.addCommand("radar", radar, "all")
     bot.addCommand("buttcoin", buttcoin, "all")
     bot.addCommand("alerts", alerts, "all")
     bot.addCommand("alert", alert, "all")
