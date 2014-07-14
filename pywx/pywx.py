@@ -427,7 +427,7 @@ def radar(parseinfo):
         'lon': lng,
         'frames': 10,
         'zoom': 8,
-        'fs': '0',
+        'fs': '1',
     }
     radarlink = 'http://www.srh.noaa.gov/ridge2/ridgenew2/?%s' % (urllib.urlencode(radarpayload))
     payload.append("%s %s" % (tcc('Radar:'), radarlink))
