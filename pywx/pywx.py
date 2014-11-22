@@ -432,7 +432,7 @@ def radar(parseinfo):
     units = get_units(forecast.json['flags']['units'])
     timezone = forecast.json['timezone']
 
-    payload = []
+    payload = ['%s:' % ncc(name)]
     radarpayload = {
         'rid': 'NAT',
         'pid': 'N0Q',
