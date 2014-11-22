@@ -73,7 +73,7 @@ class Pythabot:
         self.parse(parseinfo)
 
     def parse(self, parseinfo):
-        msg = parseinfo["firstarg"]
+        msg = parseinfo["firstarg"].lower()
         if msg in self.commands:
             log.info('got command %s %s' % (msg, parseinfo))
             if self.commands[msg]["permission"] == "owner":
