@@ -79,7 +79,7 @@ def smart_print_return(func):
         bot.privmsg(parseinfo['chan'], clean_message(msg))
     return wrapper
 
-latlong_re = re.compile(r'([0-9.-]+),([0-9.-]+)')
+latlong_re = re.compile(r'([0-9.-]+),[\s]*([0-9.-]+)')
 
 def match_location(username, args):
     args = " ".join(args)
