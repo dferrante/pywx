@@ -41,7 +41,6 @@ if config['airportdb']:
 from geopy.geocoders import GoogleV3
 geoloc = GoogleV3()
 
-fio_api_key = "0971c933da4dcd6e3fe4f01ccf62a90a"
 max_msg_len = 375
 
 def quit(parseinfo):
@@ -63,6 +62,9 @@ def smart_print_return(func):
         for name, code in sorted(cmap.items(), key=lambda x: len(x[0]), reverse=True):
             fullmsg = re.sub(' %s ' % code, '%s ' % code, fullmsg)
             fullmsg = re.sub('%s%s' % (cmap['null'], code), '%s ' % code, fullmsg)
+            if datetime.date.today().month == 10 and datetime.date.today().day == 22:
+                fullmsg = fullmsg.upper()
+
         return fullmsg
 
     @functools.wraps(func)
@@ -104,6 +106,8 @@ def match_location(username, args):
         code = "(%s)" % ('/'.join(filter(lambda x: bool(x), [airport.faa, airport.icao])))
         if airport.name == airport.city:
             name = "%s, %s %s" % (airport.city, airport.country, code)
+        elif airport.city in airport.name:
+            name = "%s, %s %s" % (airport.name, airport.country, code)
         else:
             name = "%s, %s, %s %s" % (airport.name, airport.city, airport.country, code)
         lat = airport.lat
@@ -169,7 +173,7 @@ def get_units(unitset):
     if unitset == 'us':
         return unitobj('mph', 'mi', 'F', 'in/hr', 'in', 'mbar', '%I:%M:%S%p')
     if unitset == 'si':
-        return unitobj('m/s', 'km', 'C', 'mm/hr', 'cm', 'hPa', '%H:%M:%S')
+        return unitobj('kph', 'km', 'C', 'mm/hr', 'cm', 'hPa', '%H:%M:%S')
     if unitset == 'ca':
         return unitobj('kph', 'km', 'C', 'mm/hr', 'cm', 'hPa', '%H:%M:%S')
     if unitset == 'uk':
@@ -220,7 +224,7 @@ def wf(parseinfo):
     name, lat, lng = match_location(parseinfo['sender'], args)
     if not name and not lat and not lng:
         return ['No location matches found for: %s' % ' '.join(args),]
-    forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
+    forecast = forecastio.load_forecast(config['forecast_io_secret'], float(lat), float(lng))
     units = get_units(forecast.json['flags']['units'])
 
     payload = ['%s:' % ncc(name)]
@@ -248,7 +252,7 @@ def hwf(parseinfo):
     name, lat, lng = match_location(parseinfo['sender'], args)
     if not name and not lat and not lng:
         return ['No location matches found for: %s' % ' '.join(args),]
-    forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
+    forecast = forecastio.load_forecast(config['forecast_io_secret'], float(lat), float(lng))
     units = get_units(forecast.json['flags']['units'])
 
     payload = ['%s:' % ncc(name)]
@@ -271,12 +275,20 @@ def nhwf(parseinfo):
 def chwf(parseinfo):
     return hwf(parseinfo)
 
+wxtemplate = """
+{{ name|c:"orange" }}:
+{{ current.summary|ic:current.icon }}
+{{ current.temperature }}°{{ units.temp }}
+{% if windchill %}
+    Wind Chill: {{ windchill }}°{{ units.temp }}
+"""
+
 def wx(parseinfo):
     args = parseinfo['args'][1:]
     name, lat, lng = match_location(parseinfo['sender'], args)
     if not name and not lat and not lng:
         return ['No location matches found for: %s' % ' '.join(args),]
-    forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
+    forecast = forecastio.load_forecast(config['forecast_io_secret'], float(lat), float(lng))
     units = get_units(forecast.json['flags']['units'])
     timezone = forecast.json['timezone']
     current = forecast.currently()
@@ -297,7 +309,8 @@ def wx(parseinfo):
         hi = heat_index_si(current.temperature, current.humidity*100)
         payload.append('%s%s' % (cc('Heat Index:', 'red'), pt(hi, units.temp)))
 
-    payload.append('%s %s%s from %s' % (tcc('Winds:'), int(current.windspeed), units.wind, wind_direction(current.windbaring)))
+    windspeed = current.windspeed if forecast.json['flags']['units'] != 'si' else current.windspeed*3.6 #convert m/s to kph
+    payload.append('%s %s%s from %s' % (tcc('Winds:'), int(windspeed), units.wind, wind_direction(current.windbaring)))
     payload.append('%s %s%%' % (tcc('Clouds:'), int(current.cloudcover)*100))
     payload.append('%s%s' % (tcc('Dewpoint:'), pt(current.dewPoint, units.temp)))
     payload.append('%s %s%%' % (tcc('Humidity:'), int(current.humidity*100)))
@@ -342,7 +355,7 @@ def localtime(parseinfo):
     name, lat, lng = match_location(parseinfo['sender'], args)
     if not name and not lat and not lng:
         return ['No location matches found for: %s' % ' '.join(args),]
-    forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
+    forecast = forecastio.load_forecast(config['forecast_io_secret'], float(lat), float(lng))
     units = get_units(forecast.json['flags']['units'])
     timezone = forecast.json['timezone']
 
@@ -373,7 +386,7 @@ def localtime(parseinfo):
 def alerts(parseinfo):
     args = parseinfo['args'][1:]
     name, lat, lng = match_location(parseinfo['sender'], args)
-    forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
+    forecast = forecastio.load_forecast(config['forecast_io_secret'], float(lat), float(lng))
 
     payload = []
     payload.append('%s: ' % (ncc(name)))
@@ -397,7 +410,7 @@ def alert(parseinfo):
     alert_index = int(alert_index)
 
     name, lat, lng = match_location(parseinfo['sender'], args)
-    forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
+    forecast = forecastio.load_forecast(config['forecast_io_secret'], float(lat), float(lng))
 
     alerts = forecast.json['alerts'] if 'alerts' in forecast.json else None
     if alerts:
@@ -415,7 +428,7 @@ def radar(parseinfo):
     name, lat, lng = match_location(parseinfo['sender'], args)
     if not name and not lat and not lng:
         return ['No location matches found for: %s' % ' '.join(args),]
-    forecast = forecastio.load_forecast(fio_api_key, float(lat), float(lng))
+    forecast = forecastio.load_forecast(config['forecast_io_secret'], float(lat), float(lng))
     units = get_units(forecast.json['flags']['units'])
     timezone = forecast.json['timezone']
 
