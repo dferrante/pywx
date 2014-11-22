@@ -97,7 +97,8 @@ def match_location(username, args):
     llmatch = latlong_re.match(args.lower())
     if llmatch:
         lat, lng = llmatch.groups()
-        name = "%s,%s" % (lat, lng)
+        loc = geoloc.reverse((lat, lng), exactly_one=True)
+        name = loc.address
         match = True
 
     airport = airport_lookup.get(args)
@@ -115,7 +116,7 @@ def match_location(username, args):
 
     if not match:
         try:
-            loc = geoloc.geocode(args)
+            loc = geoloc.geocode(args, exactly_one=True)
             name = loc.address
             lat = loc.latitude
             lng = loc.longitude
@@ -124,6 +125,19 @@ def match_location(username, args):
 
     usertable.upsert(dict(user=username, place=name, latitude=lat, longitude=lng), ['user'])
     return name, lat, lng
+
+def get_elevation(latlng):
+    try:
+        req = requests.get('https://maps.googleapis.com/maps/api/elevation/json', params={'locations': ','.join(map(str, latlng))})
+        if req.status_code != 200:
+            return None
+        json = req.json()
+        if json['status'] != 'OK':
+            return None
+        return json['results'][0]['elevation']
+    except:
+        return None
+
 
 cmap = {'black': '\x031','navy': '\x032','maroon': '\x035','green': '\x033','grey': '\x0314','royal': '\x0312','aqua': '\x0311',
         'lime': '\x039','silver': '\x0315','orange': '\x037','pink': '\x0313','purple': '\x036','red': '\x034','teal': '\x0310',
@@ -210,6 +224,7 @@ mag_word = lambda mag: first_greater_selector(mag, mag_words)
 mag_color = lambda mag: first_greater_selector(mag, mag_colors)
 km_to_miles = lambda km: round(float(int(km)*0.621371), 1)
 label_km_to_miles = lambda s: re.sub('[0-9.]+\s?km', '%s (%smi)' % (re.compile('([0-9.]+)\s?km').match(s).group(0), km_to_miles(re.compile('([0-9.]+)\s?km').match(s).group(1))), s)
+meters_to_feet = lambda m: m*3.28084
 
 
 def debug(parseinfo):
@@ -457,6 +472,25 @@ def radar(parseinfo):
 
 @catch_failure
 @smart_print_return
+def locate(parseinfo):
+    args = parseinfo['args'][1:]
+    name, lat, lng = match_location(parseinfo['sender'], args)
+    if not name and not lat and not lng:
+        return ['No location matches found for: %s' % ' '.join(args),]
+    forecast = forecastio.load_forecast(config['forecast_io_secret'], float(lat), float(lng))
+    units = get_units(forecast.json['flags']['units'])
+    timezone = forecast.json['timezone']
+
+    payload = ['%s:' % ncc(name)]
+    payload.append("%s %s" % (lat, lng))
+
+    elevation = get_elevation((lat, lng))
+    if elevation:
+        payload.append("%s %sm (%sft)" % (tcc('Elevation:'), int(elevation), int(meters_to_feet(elevation))))
+    return payload
+
+@catch_failure
+@smart_print_return
 def buttcoin(parseinfo):
     resp = requests.get('http://api.bitcoincharts.com/v1/markets.json')
     markets = resp.json()
@@ -588,6 +622,10 @@ if __name__ == '__main__':
     bot.addCommand('wxtime', localtime, "all")
     bot.addCommand('sun', localtime, "all")
     bot.addCommand('moon', localtime, "all")
+    bot.addCommand('locate', locate, "all")
+    bot.addCommand('find', locate, "all")
+    bot.addCommand('latlong', locate, "all")
+    bot.addCommand('latlng', locate, "all")
     bot.addCommand("housewx", housewx, "all")
     bot.addCommand("radar", radar, "all")
     bot.addCommand("buttcoin", buttcoin, "all")
