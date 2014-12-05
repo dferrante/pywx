@@ -554,7 +554,7 @@ def printquake(chan, eq):
     localtime = datetime.datetime.fromtimestamp(eqp['time']/1000, tz=pytz.utc)
     if eqp.get('tz'):
         localtime += datetime.timedelta(minutes=eqp.get('tz', 0))
-    localtime = localtime.strftime('%m/%d %I:%M:%p')
+    localtime = localtime.strftime('%m/%d %I:%M:%S%p')
 
     ago = hms((datetime.datetime.now() - epoch_dt(eqp['time']/1000)).seconds)
 

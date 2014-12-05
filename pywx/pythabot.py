@@ -90,8 +90,8 @@ class Pythabot:
                 log.debug(self.buffer.strip())
                 if (("/MOTD" in self.buffer or 'End of message of the day' in self.buffer) and self.debounce == False):
                     if 'nickserv_pass' in self.config:
-                        self.privmsg('NickServ', 'identify %s' % self.conf['nickserv_pass'])
-                        time.sleep(2)
+                        self.privmsg('NickServ', 'identify %s' % self.config['nickserv_pass'])
+                        time.sleep(10)
                     for chan in self.config["chans"]:
                         self.sendraw("JOIN %s" % chan)
                         log.info("Joined %s" % chan)
