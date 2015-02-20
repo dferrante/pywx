@@ -93,6 +93,10 @@ def match_location(username, args):
         if user and user['place'] and user['latitude'] and user['longitude']:
             return user['place'], user['latitude'], user['longitude']
 
+    user = usertable.find_one(user=args)
+    if user and user['place'] and user['latitude'] and user['longitude']:
+        return user['place'], user['latitude'], user['longitude']
+
     #latlong
     llmatch = latlong_re.match(args.lower())
     if llmatch:
