@@ -617,7 +617,7 @@ def housewx(parseinfo):
 
 def swx_scale_parse(data):
     sw = []
-    sw.append('Radio:')
+    sw.append('%s:' % cc("Radio", 'aqua'))
     if data['R']['Scale'] is not None:
         sw.append('%s' % cc('R%s' % data['R']['Scale'], swx_colors[int(data['R']['Scale'])]))
         if data['R']['Text'] is not None and data['R']['Text'] != 'none':
@@ -627,7 +627,7 @@ def swx_scale_parse(data):
     if data['R']['MajorProb'] is not None:
         sw.append('%s: %s%%' % (cc('R3-R5', 'red'), data['R']['MajorProb']))
 
-    sw.append('Solar Radiation:')
+    sw.append('%s:' % cc("Solar Radiation", 'aqua'))
     if data['S']['Scale'] is not None:
         sw.append('%s' % cc('S%s' % data['S']['Scale'], swx_colors[int(data['S']['Scale'])]))
         if data['S']['Text'] is not None and data['S']['Text'] != 'none':
@@ -635,7 +635,7 @@ def swx_scale_parse(data):
     if data['S']['Prob'] is not None:
         sw.append('%s: %s%%' % (cc('S1 or Greater', 'yellow'), data['S']['Prob']))
 
-    sw.append('Geomagnetic:')
+    sw.append('%s:' % cc("Geomagnetic", 'aqua'))
     if data['G']['Scale'] is not None:
         sw.append('%s' % cc('G%s' % data['G']['Scale'], swx_colors[int(data['G']['Scale'])]))
         if data['G']['Text'] is not None and data['G']['Text'] != 'none':
@@ -660,7 +660,6 @@ def swx(parseinfo):
 
     sw = []
     sw.append('%s:' % ncc("Space"))
-    sw.append('%s:' % cc("Current", 'maroon'))
     sw += swx_scale_parse(current)
     sw.append('%s:' % cc("Today's Max", 'maroon'))
     sw += swx_scale_parse(today)
