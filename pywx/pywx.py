@@ -181,6 +181,8 @@ ncc = lambda s: cc(" %s" % s if s[0] in map(str, range(10)) else s, 'orange')
 tcc = lambda s: cc(s, 'royal')
 icc = lambda s,i: cc(s, icon_colors[i])
 
+swx_colors = dict(enumerate(['lime', 'yellow', 'yellow', 'orange', 'red', 'red']))
+
 def color_strip(s):
     for code in sorted(cmap.values(), key=lambda x: len(x), reverse=True):
         s = re.sub(code, '', s)
@@ -613,6 +615,83 @@ def housewx(parseinfo):
     return payload
 
 
+def swx_scale_parse(data):
+    sw = []
+    sw.append('Radio:')
+    if data['R']['Scale'] is not None:
+        sw.append('%s' % cc('R%s' % data['R']['Scale'], swx_colors[int(data['R']['Scale'])]))
+        if data['R']['Text'] is not None and data['R']['Text'] != 'none':
+            sw.append('(%s)' % cc(data['R']['Text'].title(), swx_colors[int(data['R']['Scale'])]))
+    if data['R']['MinorProb'] is not None:
+        sw.append('%s: %s%%' % (cc('R1-R2', 'yellow'), data['R']['MinorProb']))
+    if data['R']['MajorProb'] is not None:
+        sw.append('%s: %s%%' % (cc('R3-R5', 'red'), data['R']['MajorProb']))
+
+    sw.append('Solar Radiation:')
+    if data['S']['Scale'] is not None:
+        sw.append('%s' % cc('S%s' % data['S']['Scale'], swx_colors[int(data['S']['Scale'])]))
+        if data['S']['Text'] is not None and data['S']['Text'] != 'none':
+            sw.append('(%s)' % cc(data['S']['Text'].title(), swx_colors[int(data['S']['Scale'])]))
+    if data['S']['Prob'] is not None:
+        sw.append('%s: %s%%' % (cc('S1 or Greater', 'yellow'), data['S']['Prob']))
+
+    sw.append('Geomagnetic:')
+    if data['G']['Scale'] is not None:
+        sw.append('%s' % cc('G%s' % data['G']['Scale'], swx_colors[int(data['G']['Scale'])]))
+        if data['G']['Text'] is not None and data['G']['Text'] != 'none':
+            sw.append('(%s)' % cc(data['G']['Text'].title(), swx_colors[int(data['G']['Scale'])]))
+    return sw
+
+
+@catch_failure
+@smart_print_return
+def swx(parseinfo):
+    req = requests.get('http://services.swpc.noaa.gov/products/noaa-scales.json')
+    scales = req.json()
+    today = scales['-1']
+    current = scales['0']
+
+    req = requests.get('http://services.swpc.noaa.gov/products/summary/solar-wind-speed.json')
+    solar_wind_speed = req.json()
+    req = requests.get('http://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json')
+    solar_wind_mag = req.json()
+    req = requests.get('http://services.swpc.noaa.gov/products/summary/10cm-flux.json')
+    flux = req.json()
+
+    sw = []
+    sw.append('%s:' % ncc("Space"))
+    sw.append('%s:' % cc("Current", 'maroon'))
+    sw += swx_scale_parse(current)
+    sw.append('%s:' % cc("Today's Max", 'maroon'))
+    sw += swx_scale_parse(today)
+
+    sw.append('%s: %s km/sec' % (cc("Solar Wind Speed", 'maroon'), solar_wind_speed['WindSpeed']))
+    sw.append('%s: Bt %snT, Bz %snT' % (cc("Magnetic Fields", 'maroon'), solar_wind_mag['Bt'], solar_wind_mag['Bz']))
+    sw.append('%s: %ssfu' % (cc("Radio Flux", 'maroon'), flux['Flux']))
+    return sw
+
+
+@catch_failure
+@smart_print_return
+def swf(parseinfo):
+    req = requests.get('http://services.swpc.noaa.gov/products/noaa-scales.json')
+    scales = req.json()
+    rest_of_today = scales['1']
+    tomorrow = scales['2']
+    day_after = scales['3']
+
+    sw = []
+    sw.append('%s:' % ncc("Space"))
+    sw.append('%s:' % cc("Rest of Today", 'maroon'))
+    sw += swx_scale_parse(rest_of_today)
+    sw.append('%s:' % cc("Tomorrow", 'maroon'))
+    sw += swx_scale_parse(tomorrow)
+    sw.append('%s:' % cc("Next Day", 'maroon'))
+    sw += swx_scale_parse(day_after)
+
+    return sw
+
+
 if __name__ == '__main__':
     bot = pythabot.Pythabot(config)
 
@@ -623,6 +702,8 @@ if __name__ == '__main__':
     bot.addCommand("nhf", nhwf, "all")
     bot.addCommand("wx", cwx, "all")
     bot.addCommand("nwx", nwx, "all")
+    bot.addCommand("swx", swx, "all")
+    bot.addCommand("swf", swf, "all")
     bot.addCommand('wxtime', localtime, "all")
     bot.addCommand('sun', localtime, "all")
     bot.addCommand('moon', localtime, "all")
