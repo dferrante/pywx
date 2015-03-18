@@ -614,32 +614,24 @@ def housewx(parseinfo):
     payload = ["House is at%s," % pt(curtemp), status, fan_status]
     return payload
 
+swcc = lambda s, sc: cc(s, swx_colors[int(sc)])
+scale_format = lambda s,t,st: '' if not s else swcc('%s%s-%s' % (st, s, t.title()), s) if t and t != 'none' else swcc('%s%s' % (st, s), s)
 
 def swx_scale_parse(data):
     sw = []
-    sw.append('%s:' % cc("Radio", 'aqua'))
-    if data['R']['Scale'] is not None:
-        sw.append('%s' % cc('R%s' % data['R']['Scale'], swx_colors[int(data['R']['Scale'])]))
-        if data['R']['Text'] is not None and data['R']['Text'] != 'none':
-            sw.append('(%s)' % cc(data['R']['Text'].title(), swx_colors[int(data['R']['Scale'])]))
-    if data['R']['MinorProb'] is not None:
-        sw.append('%s: %s%%' % (cc('R1-R2', 'yellow'), data['R']['MinorProb']))
-    if data['R']['MajorProb'] is not None:
-        sw.append('%s: %s%%' % (cc('R3-R5', 'red'), data['R']['MajorProb']))
+    radio, solar, geomag = data['R'], data['S'], data['G']
 
-    sw.append('%s:' % cc("Solar Radiation", 'aqua'))
-    if data['S']['Scale'] is not None:
-        sw.append('%s' % cc('S%s' % data['S']['Scale'], swx_colors[int(data['S']['Scale'])]))
-        if data['S']['Text'] is not None and data['S']['Text'] != 'none':
-            sw.append('(%s)' % cc(data['S']['Text'].title(), swx_colors[int(data['S']['Scale'])]))
-    if data['S']['Prob'] is not None:
-        sw.append('%s: %s%%' % (cc('S1 or Greater', 'yellow'), data['S']['Prob']))
+    sw.append(scale_format(radio['Scale'], radio['Text'], 'R'))
+    if radio['MinorProb']:
+        sw.append('%s: %s%%' % (cc('R1-R2', 'yellow'), radio['MinorProb']))
+    if radio['MajorProb']:
+        sw.append('%s: %s%%' % (cc('R3+', 'red'), radio['MajorProb']))
 
-    sw.append('%s:' % cc("Geomagnetic", 'aqua'))
-    if data['G']['Scale'] is not None:
-        sw.append('%s' % cc('G%s' % data['G']['Scale'], swx_colors[int(data['G']['Scale'])]))
-        if data['G']['Text'] is not None and data['G']['Text'] != 'none':
-            sw.append('(%s)' % cc(data['G']['Text'].title(), swx_colors[int(data['G']['Scale'])]))
+    sw.append(scale_format(solar['Scale'], solar['Text'], 'S'))
+    if solar['Prob']:
+        sw.append('%s: %s%%' % (cc('S1+', 'yellow'), solar['Prob']))
+
+    sw.append(scale_format(geomag['Scale'], geomag['Text'], 'G'))
     return sw
 
 
@@ -660,6 +652,7 @@ def swx(parseinfo):
 
     sw = []
     sw.append('%s:' % ncc("Space"))
+    sw.append('%s:' % cc("Current", 'maroon'))
     sw += swx_scale_parse(current)
     sw.append('%s:' % cc("Today's Max", 'maroon'))
     sw += swx_scale_parse(today)
@@ -681,7 +674,7 @@ def swf(parseinfo):
 
     sw = []
     sw.append('%s:' % ncc("Space"))
-    sw.append('%s:' % cc("Rest of Today", 'maroon'))
+    sw.append('%s:' % cc("Today", 'maroon'))
     sw += swx_scale_parse(rest_of_today)
     sw.append('%s:' % cc("Tomorrow", 'maroon'))
     sw += swx_scale_parse(tomorrow)
