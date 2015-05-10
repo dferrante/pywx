@@ -622,21 +622,24 @@ swcc = lambda s, sc: cc(s, swx_colors[int(sc)])
 scale_format = lambda s,t,st: '' if not s else swcc('%s%s-%s' % (st, s, t.title()), s) if t and t != 'none' else swcc('%s%s' % (st, s), s)
 
 def swx_scale_parse(data):
-    sw = []
     radio, solar, geomag = data['R'], data['S'], data['G']
 
-    sw.append(scale_format(radio['Scale'], radio['Text'], 'R'))
+    r = []
+    r.append(scale_format(radio['Scale'], radio['Text'], 'R'))
     if radio['MinorProb']:
-        sw.append('%s: %s%%' % (cc('R1-R2', 'yellow'), radio['MinorProb']))
+        r.append('%s: %s%%' % (cc('R1-R2', 'yellow'), radio['MinorProb']))
     if radio['MajorProb']:
-        sw.append('%s: %s%%' % (cc('R3+', 'red'), radio['MajorProb']))
+        r.append('%s: %s%%' % (cc('R3+', 'red'), radio['MajorProb']))
+    r = ' '.join(filter(None, r))
 
-    sw.append(scale_format(solar['Scale'], solar['Text'], 'S'))
+    s = []
+    s.append(scale_format(solar['Scale'], solar['Text'], 'S'))
     if solar['Prob']:
-        sw.append('%s: %s%%' % (cc('S1+', 'yellow'), solar['Prob']))
-
-    sw.append(scale_format(geomag['Scale'], geomag['Text'], 'G'))
-    return sw
+        s.append('%s: %s%%' % (cc('S1+', 'yellow'), solar['Prob']))
+    s = ' '.join(filter(None, s))
+    
+    g = scale_format(geomag['Scale'], geomag['Text'], 'G')
+    return '|'.join([r,s,g])
 
 
 @catch_failure
@@ -657,9 +660,9 @@ def swx(parseinfo):
     sw = []
     sw.append('%s:' % ncc("Space"))
     sw.append('%s:' % cc("Current", 'maroon'))
-    sw += swx_scale_parse(current)
+    sw.append(swx_scale_parse(current))
     sw.append('%s:' % cc("Today's Max", 'maroon'))
-    sw += swx_scale_parse(today)
+    sw.append(swx_scale_parse(today))
 
     sw.append('%s: %s km/sec' % (cc("Solar Wind Speed", 'maroon'), solar_wind_speed['WindSpeed']))
     sw.append('%s: Bt %snT, Bz %snT' % (cc("Magnetic Fields", 'maroon'), solar_wind_mag['Bt'], solar_wind_mag['Bz']))
@@ -667,8 +670,8 @@ def swx(parseinfo):
     return sw
 
 
-@catch_failure
-@smart_print_return
+#@catch_failure
+#@smart_print_return
 def swf(parseinfo):
     req = requests.get('http://services.swpc.noaa.gov/products/noaa-scales.json')
     scales = req.json()
@@ -679,11 +682,11 @@ def swf(parseinfo):
     sw = []
     sw.append('%s:' % ncc("Space"))
     sw.append('%s:' % cc("Today", 'maroon'))
-    sw += swx_scale_parse(rest_of_today)
+    sw.append(swx_scale_parse(rest_of_today))
     sw.append('%s:' % cc("Tomorrow", 'maroon'))
-    sw += swx_scale_parse(tomorrow)
+    sw.append(swx_scale_parse(tomorrow))
     sw.append('%s:' % cc("Next Day", 'maroon'))
-    sw += swx_scale_parse(day_after)
+    sw.append(swx_scale_parse(day_after))
 
     return sw
 
