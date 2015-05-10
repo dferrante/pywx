@@ -16,6 +16,10 @@ import dataset
 import csv
 import sys
 import urllib
+import urlparse
+from apiclient.discovery import build
+from apiclient.errors import HttpError
+from oauth2client.tools import argparser
 
 try:
     from local_config import config
@@ -683,9 +687,67 @@ def swf(parseinfo):
 
     return sw
 
+def pretty_iso_duration(iso_duration):
+    dd = {}
+    num = 0
+    timesplit = False
+    duration = []
+    iso_tags = (('Y', 'year'), ('M', 'month'), ('W', 'week'), ('D', 'day'))
+
+    for s in iso_duration:
+        if s.isdigit():
+            num = num*10 + int(s)
+            continue
+        if s == 'P':
+            continue
+        if s == 'T':
+            timesplit = True
+            continue
+        if timesplit and s == 'M':
+            s = 'MM'
+        dd[s] = num
+        num = 0
+
+    for tag, name in iso_tags:
+        if tag in dd and dd[tag]:
+            duration.append('%s %s%s ' % (dd[tag], name, 's' if dd[tag] > 1 else ''))
+    if 'H' in dd: duration.append('%s:' % dd['H'])
+    duration.append('%02d:%02d' % (dd.get('MM', 0), dd.get('S', 0)))
+    duration = ''.join(duration)
+    return duration
+
+def youtube(word):
+    vid = None
+    try:
+        url = urlparse.urlparse(word)
+        if 'youtube' in url.netloc:
+            qs = urlparse.parse_qs(url.query)
+            vid = qs.get('v')[0]
+        if 'youtu.be' == url.netloc:
+            vid = url.path.strip('/')
+    except:
+        return None
+
+    if not vid:
+        return None
+
+    youtube = build("youtube", "v3", developerKey=config['youtube_key'])
+    video_response = youtube.videos().list(id=vid, part='snippet, contentDetails').execute()
+    video = video_response.get('items')
+    if video:
+        video = video[0]
+    else:
+        return None
+
+    title = video["snippet"]["title"]
+    duration = pretty_iso_duration(video['contentDetails']['duration'])
+    return "YOUTUBE: %s [%s]" % (title, duration)
+
 
 if __name__ == '__main__':
     bot = pythabot.Pythabot(config)
+
+    bot.addParserCommand(youtube)
 
     bot.addCommand("die", quit, "owner")
     bot.addCommand("wf", cwf, "all")

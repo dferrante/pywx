@@ -16,6 +16,7 @@ class Pythabot:
         self.commands = {}
         self.commandlist = []
         self.periodiccommandlist = []
+        self.parsercommands = []
         self.sock = socket.socket()
 
     def connect(self):
@@ -40,6 +41,9 @@ class Pythabot:
 
     def addPeriodicCommand(self, func):
         self.periodiccommandlist.append(func)
+
+    def addParserCommand(self, func):
+        self.parsercommands.append(func)
 
     def runPeriodicCommands(self):
         for func in self.periodiccommandlist:
@@ -82,6 +86,18 @@ class Pythabot:
 
             if self.commands[msg]["permission"] == "all":
                 self.commands[msg]["func"](parseinfo)
+
+        parsedargs = []
+        for arg in parseinfo['args']:
+            for parser in self.parsercommands:
+                p = parser(arg)
+                if p:
+                    parsedargs.append(p)
+        if parsedargs:
+            msg = ' '.join(parsedargs)
+            self.privmsg(parseinfo['chan'], msg)
+
+
 
     def listen(self):
         try:

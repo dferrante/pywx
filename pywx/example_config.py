@@ -15,4 +15,5 @@ config = {
     "quitmsg": "peace out",
     "redlink_user": '',
     "redlink_pass": ''
+    "youtube_key": "",
 }
