@@ -14,6 +14,8 @@ config = {
     "ownermask": "~ident@hostname",
     "quitmsg": "peace out",
     "redlink_user": '',
-    "redlink_pass": ''
+    "redlink_pass": '',
     "youtube_key": "",
+    "imgur_client_id": "",
+    "imgur_client_secret": "",
 }
