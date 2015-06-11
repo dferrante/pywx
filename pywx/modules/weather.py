@@ -227,9 +227,9 @@ class CurrentWeather(BaseWeather):
     {% if wind_chill %} {{ 'Wind Chill'|c('navy') }}: {{ wind_chill|ctemp }} {% endif %}
     {% if heat_index %} {{ 'Heat Index'|c('red') }}: {{ heat_index|ctemp }} {% endif %}
     {{ 'Winds'|tc }}: {{ windspeed }}
-    {{ 'Clouds'|tc }}: {{ current.cloudCover|int*100 }}%
+    {{ 'Clouds'|tc }}: {{ clouds }}%
     {{ 'Dewpoint'|tc }}: {{ current.dewPoint|temp }}
-    {{ 'Humidity'|tc }}: {{ current.humidity|int*100 }}%
+    {{ 'Humidity'|tc }}: {{ humidity }}%
     {{ 'Pressure'|tc }}: {{ current.pressure|int }}{{ units.press }}
     {{ 'Sun'|tc }}: {% if sunrise %}☀ {{ sunrise }}{% endif %} ☽ {{ sunset }} {{ daylength }}
     {% if alerts %}{{ 'Alerts'|tc }}: {% for alert, acolor in alerts %}#{{ loop.index }}: {{ alert.title|c(acolor) }} {% endfor %}{% endif %}"""
@@ -254,6 +254,8 @@ class CurrentWeather(BaseWeather):
 
         windspeed = current.windSpeed if forecast.json['flags']['units'] != 'si' else current.windSpeed*3.6 #convert m/s to kph
         payload['windspeed'] = '%s%s from %s' % (int(windspeed), units.wind, first_greater_selector(current.windBearing, wind_directions))
+        payload['humidity'] = int(current.humidity*100)
+        payload['clouds'] = int(current.cloudCover*100)
 
         sunrisets = forecast.json['daily']['data'][0].get('sunriseTime')
         sunsetts = forecast.json['daily']['data'][0].get('sunsetTime')
