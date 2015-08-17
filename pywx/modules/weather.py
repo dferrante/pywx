@@ -337,7 +337,7 @@ class Alert(BaseWeather):
         parser = base.IRCArgumentParser()
         parser.add_argument('alert_index', type=int, nargs=1)
         parser.add_argument('location', type=str, default=None, nargs='*')
-        return parser.parse_args(args)
+        return parser.parse_args(msg)
 
     def run(self, msg):
         payload = super(Alert, self).context(msg)
