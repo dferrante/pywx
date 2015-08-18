@@ -346,14 +346,17 @@ class Alert(BaseWeather):
 
         lines = []
         if 'alerts' in forecast.json:
-            alert = forecast.json['alerts'][alert_index-1]
+            try:
+                alert = forecast.json['alerts'][alert_index-1]
+            except IndexError, e:
+                return []
             lines.append(alert['title'])
             lines.append(alert['uri'])
             for line in alert['description'].split('\n'):
-                lines.append(str(line))
+                if line:
+                    lines.append(str(line))
             lines.append(datetime.datetime.fromtimestamp(alert['expires']).strftime('Expires: %Y-%m-%d %H:%M'))
-        for line in lines:
-            msg['bot'].privmsg(msg['sender'], line)
+        return lines
 
 
 
