@@ -58,7 +58,7 @@ class Earthquake(base.Command):
         return payload
 
 
-@register_periodic
+@register_periodic(60)
 class EarthquakeAlerter(Earthquake):
     usgs_api = 'http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_hour.geojson'
 
@@ -77,7 +77,7 @@ class EarthquakeAlerter(Earthquake):
             else:
                 eqdb.append(eq['properties']['code'])
             return self.quake_context(eq)
-        return None
+        raise base.NoMessage
 
 
 @register(commands=['lastquake',])

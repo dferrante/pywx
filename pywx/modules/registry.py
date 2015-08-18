@@ -7,8 +7,8 @@ class Register(object):
         self.command_klasses = {}
         self.parsers = []
         self.parser_klasses = []
-        self.periodic_tasks = []
-        self.periodic_klasses = []
+        self.periodic_tasks = {}
+        self.periodic_klasses = {}
 
     def load_modules(self, config):
         for cls, cmds in self.command_klasses.iteritems():
@@ -16,8 +16,10 @@ class Register(object):
             for cmd in cmds:
                 self.commands[cmd] = cmdcls
 
+        for cls, attr in self.periodic_klasses.iteritems():
+            self.periodic_tasks[cls(config)] = attr
+
         self.parsers = [cls(config) for cls in self.parser_klasses]
-        self.periodic_tasks = [cls(config) for cls in self.periodic_klasses]
 
 
 registry = Register()
@@ -28,9 +30,11 @@ def register(commands=[]):
         return cmd
     return add_class
 
-def register_periodic(cls):
-    registry.periodic_tasks.append(cls)
-    return cls
+def register_periodic(run_every=60):
+    def add_class(cmd):
+        registry.periodic_klasses[cmd] = {'run_every': run_every, 'last_run': None}
+        return cmd
+    return add_class
 
 def register_parser(cls):
     registry.parser_klasses.append(cls)

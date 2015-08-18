@@ -4,7 +4,7 @@ import string
 import time
 import datetime
 import logging as log
-log.basicConfig(level=log.DEBUG)
+log.basicConfig(level=log.DEBUG, format="%(asctime)-15s %(levelname)s %(message)s")
 
 
 class Pythabot:
@@ -32,10 +32,16 @@ class Pythabot:
         except socket.error:
             self.quit("Could not connect to port %s, on %s." % (self.config["port"], self.config["host"]))
 
-    def runPeriodicCommands(self):
-        for func in self.periodiccommandlist:
-            for chan in self.config['chans']:
-                func({'chan': chan})
+    def run_periodic_commands(self):
+        for task, attrs in self.registry.periodic_tasks.iteritems():
+            if attrs['last_run'] and attrs['last_run'] + attrs['run_every'] >= time.time():
+                continue
+            else:
+                log.info('Running periodic task: %s', task)
+                self.registry.periodic_tasks[task]['last_run'] = time.time()
+                for msg in task.run():
+                    for chan in self.config['chans']:
+                        self.privmsg(chan, msg)
 
     def initparse(self, line):
         #[':techboy6601!~IceChat77@unaffiliated/techboy6601','PRIVMSG','#botters-test',':yo','wuts','up']
@@ -93,7 +99,7 @@ class Pythabot:
                     for chan in self.config["chans"]:
                         self.sendraw("JOIN %s" % chan)
                         log.info("Joined %s" % chan)
-                        self.debounce == True
+                    self.debounce == True
 
                 temp = self.buffer.split("\n")
                 self.buffer = temp.pop()
@@ -108,13 +114,11 @@ class Pythabot:
                     if line[0] == "PING":
                         self.sendraw("PONG %s" % line[1])
                         log.debug("PONG %s %s" % (line[1], datetime.datetime.now()))
-                        for task in self.registry.periodic_tasks:
-                            for line in task.run():
-                                for chan in self.config['chans']:
-                                    self.privmsg(chan, line)
 
                     if line[1] == "PRIVMSG":
                         self.initparse(line)
+
+                self.run_periodic_commands()
         except socket.error:
             log.error("Socket error. Reconnecting in 30s")
             time.sleep(30)

@@ -43,6 +43,9 @@ def irc_color(value, color, nulled=True, bold=False):
 class ArgumentError(Exception):
     pass
 
+class NoMessage(Exception):
+    pass
+
 
 class IRCArgumentParser(argparse.ArgumentParser):
     def parse_args(self, msg):
@@ -79,11 +82,13 @@ class Command(object):
     def parse_args(self, msg):
         return msg
 
-    def run(self, msg):
+    def run(self, msg=''):
         template = self.environment.from_string(self.template)
         try:
             context = self.context(msg)
             reply = template.render(context)
+        except NoMessage, e:
+            return []
         except ArgumentError, e:
             return [e.message]
         except Exception, e:
