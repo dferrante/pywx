@@ -46,7 +46,11 @@ class YoutubeParser(ParserCommand):
                 url = urlparse.urlparse(word)
                 if 'youtube' in url.netloc:
                     qs = urlparse.parse_qs(url.query)
-                    vid = qs.get('v')[0]
+                    vid = qs.get('v')[0] if 'v' in qs else None
+                    if not vid:
+                        split = url.path.split('/')
+                        if split[1] == 'v':
+                            vid = split[2]
                 if 'youtu.be' == url.netloc:
                     vid = url.path.strip('/')
             except:
