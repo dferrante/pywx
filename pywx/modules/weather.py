@@ -363,6 +363,7 @@ class Alert(BaseWeather):
     def run(self, msg):
         payload = super(Alert, self).context(msg)
         forecast = payload['forecast']
+
         alert_index = payload['args'].alert_index[0]
 
         lines = []
@@ -420,4 +421,42 @@ class Locate(BaseWeather):
         if elevation:
             payload['elevation'] = elevation
             payload['elevation_ft'] = meters_to_feet(elevation)
+        return payload
+
+
+@register(commands=['eclipse',])
+class Locate(BaseWeather):
+    eclipse_api = "https://www.timeanddate.com/scripts/astroserver.php"
+    template = """{{ name|nc }}: {{ 'Aug 21 Eclipse'|c('maroon') }}:
+        {{ 'Start'|tc }}: {{ start }} {{ 'Max'|tc }}: {{ max }} {{ 'End'|tc }}: {{ end }}
+        {{ 'Duration'|tc }}: {{ duration }} {{ 'Magnitude'|tc }}: {{ mag }} {{ 'Obscuration'|tc }}: {{ obs }}%
+    """
+
+    def get_eclipse_data(self, latlng):
+        params = {
+            'mode': 'localeclipsejson',
+            'n': '@%s' % ','.join(map(str, latlng)),
+            'iso': '20170821',
+            'zoom': 5,
+            'mobile': 0
+        }
+        try:
+            req = requests.get(self.eclipse_api, params=params)
+            if req.status_code != 200:
+                return None
+            json = req.json()
+            return json
+        except:
+            return None
+
+    def context(self, msg):
+        payload = super(Locate, self).context(msg)
+        eclipse = self.get_eclipse_data((payload['lat'], payload['lng']))
+
+        payload['start'] = eclipse['events'][0]['txt'][10:]
+        payload['max'] = eclipse['events'][1]['txt'][10:]
+        payload['end'] = eclipse['events'][2]['txt'][10:]
+        payload['duration'] = eclipse['duration']['fmt']
+        payload['mag'] = eclipse['mag']
+        payload['obs'] = eclipse['obs'] * 100
         return payload
