@@ -9,7 +9,7 @@ hms = lambda s: ''.join(['%s%s' % (n,l) for n,l in filter(lambda x: bool(x[0]), 
 @register(commands=['buttcoin',])
 class Buttcoin(base.Command):
     buttcoin_api = 'http://api.bitcoincharts.com/v1/markets.json'
-    default_symbol = 'btceUSD'
+    default_symbol = 'coinbaseUSD'
 
     template = """{{ symbol|nc }} ({{ currency|c('green') }}):
         {{ 'Last'|tc }}: ${{ close }} ($1 = {{ inverse }})

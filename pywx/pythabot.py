@@ -92,7 +92,7 @@ class Pythabot:
             while 1:
                 self.buffer = self.buffer + self.sock.recv(1024)
                 log.debug(self.buffer.strip())
-                if (("/MOTD" in self.buffer or 'End of message of the day' in self.buffer) and self.debounce == False):
+                if (("MOTD" in self.buffer or 'End of message of the day' in self.buffer) and self.debounce == False):
                     if 'nickserv_pass' in self.config:
                         self.privmsg('NickServ', 'identify %s' % self.config['nickserv_pass'])
                         time.sleep(10)
