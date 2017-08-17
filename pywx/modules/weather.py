@@ -213,11 +213,32 @@ class WeatherForecast(BaseWeather):
 class HourlyForecast(BaseWeather):
     template = u"""
         {{ name|nc }}:
-        {% for hour in forecast.hourly().data[:12] %}
+        {% for hour in hourlies %}
             {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
             {{ hour.summary|ic(hour.icon) }}
             {{ hour.temperature|ctemp }}
         {% endfor %}"""
+
+    def context(self, msg):
+        payload = super(HourlyForecast, self).context(msg)
+        forecast = payload['forecast']
+        units = payload['units']
+        timezone = pytz.timezone(forecast.json['timezone'])
+        local_tz = pytz.timezone('US/Eastern')
+
+        hourly = forecast.hourly().data[:12]
+        hourlies = []
+        for h in hourly:
+            hour = {
+               'time': local_tz.localize(h.time).astimezone(timezone),
+               'icon': h.icon,
+               'summary': h.summary,
+               'temperature': h.temperature,
+            }
+            hourlies.append(hour)
+        payload['hourlies'] = hourlies
+        return payload
+
 
 
 @register(commands=['wx',])
