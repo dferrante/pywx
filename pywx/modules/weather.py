@@ -427,7 +427,7 @@ class Locate(BaseWeather):
 @register(commands=['eclipse',])
 class Locate(BaseWeather):
     eclipse_api = "https://www.timeanddate.com/scripts/astroserver.php"
-    template = """{{ name|nc }}: {{ 'Aug 21 Eclipse'|c('maroon') }}:
+    template = """{{ name|nc }}: {{ 'Apr 8, 2024 Eclipse'|c('maroon') }}:
         {{ 'Start'|tc }}: {{ start }} {{ 'Max'|tc }}: {{ max }} {{ 'End'|tc }}: {{ end }}
         {{ 'Duration'|tc }}: {{ duration }} {{ 'Magnitude'|tc }}: {{ mag }} {{ 'Obscuration'|tc }}: {{ obs }}%
     """
@@ -436,7 +436,7 @@ class Locate(BaseWeather):
         params = {
             'mode': 'localeclipsejson',
             'n': '@%s' % ','.join(map(str, latlng)),
-            'iso': '20170821',
+            'iso': '20240408',
             'zoom': 5,
             'mobile': 0
         }
@@ -453,9 +453,9 @@ class Locate(BaseWeather):
         payload = super(Locate, self).context(msg)
         eclipse = self.get_eclipse_data((payload['lat'], payload['lng']))
 
-        payload['start'] = eclipse['events'][0]['txt'][10:]
-        payload['max'] = eclipse['events'][1]['txt'][10:]
-        payload['end'] = eclipse['events'][2]['txt'][10:]
+        payload['start'] = eclipse['events'][0]['txt'][15:]
+        payload['max'] = eclipse['events'][1]['txt'][15:]
+        payload['end'] = eclipse['events'][2]['txt'][15:]
         payload['duration'] = eclipse['duration']['fmt']
         payload['mag'] = eclipse['mag']
         payload['obs'] = eclipse['obs'] * 100
