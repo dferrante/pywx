@@ -425,7 +425,7 @@ class Locate(BaseWeather):
 
 
 @register(commands=['eclipse',])
-class Locate(BaseWeather):
+class Eclipse(BaseWeather):
     eclipse_api = "https://www.timeanddate.com/scripts/astroserver.php"
     template = """{{ name|nc }}: {{ 'Apr 8, 2024 Eclipse'|c('maroon') }}:
         {{ 'Start'|tc }}: {{ start }} {{ 'Max'|tc }}: {{ max }} {{ 'End'|tc }}: {{ end }}
