@@ -381,21 +381,21 @@ class AlertDetails(BaseWeather):
         return lines
 
 
-
-@register(commands=['radar',])
-class Radar(BaseWeather):
-    template = "{{ name|nc }}: {{ 'Radar'|tc }}: {{ radarlink }} {{ 'Spark Radar'|tc }}: {{ sparkradarlink }}"
-
-    def context(self, msg):
-        payload = super(Radar, self).context(msg)
-        timezone = payload['forecast'].json['timezone']
-        payload['radarlink'] = 'http://www.srh.noaa.gov/ridge2/ridgenew2/?%s' % (urllib.urlencode({
-            'rid': 'NAT', 'pid': 'N0Q', 'lat': payload['lat'], 'lon': payload['lng'], 'frames': 10, 'zoom': 8, 'fs': '1'
-        }))
-        payload['sparkradarlink'] = 'http://weatherspark.com/forecasts/sparkRadar?%s' % (urllib.urlencode({
-            'lat': round(payload['lat'], 3), 'lon': round(payload['lng'] ,3), 'timeZone': timezone, 'unit': payload['units'].dist
-        }))
-        return payload
+# Disabling radar command since the URLs to which it links are broken
+#@register(commands=['radar',])
+#class Radar(BaseWeather):
+#    template = "{{ name|nc }}: {{ 'Radar'|tc }}: {{ radarlink }} {{ 'Spark Radar'|tc }}: {{ sparkradarlink }}"
+#
+#    def context(self, msg):
+#        payload = super(Radar, self).context(msg)
+#        timezone = payload['forecast'].json['timezone']
+#        payload['radarlink'] = 'http://www.srh.noaa.gov/ridge2/ridgenew2/?%s' % (urllib.urlencode({
+#            'rid': 'NAT', 'pid': 'N0Q', 'lat': payload['lat'], 'lon': payload['lng'], 'frames': 10, 'zoom': 8, 'fs': '1'
+#        }))
+#        payload['sparkradarlink'] = 'http://weatherspark.com/forecasts/sparkRadar?%s' % (urllib.urlencode({
+#            'lat': round(payload['lat'], 3), 'lon': round(payload['lng'] ,3), 'timeZone': timezone, 'unit': payload['units'].dist
+#        }))
+#        return payload
 
 
 @register(commands=['locate', 'find', 'latlng', 'latlong'])
