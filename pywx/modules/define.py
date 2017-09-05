@@ -4,7 +4,7 @@ from registry import register
 
 
 @register(commands=['define','what', "what's"])
-class SpaceWeather(base.Command):
+class Acronym(base.Command):
     template = u"""{{ acronym|nc }}: {{ definition }}"""
 
     def context(self, msg):
