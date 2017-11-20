@@ -3,6 +3,7 @@
 
 import pythabot
 import sys
+import log
 from modules import *
 
 #from IPython.core import ultratb
