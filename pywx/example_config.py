@@ -16,6 +16,6 @@ config = {
     "redlink_user": '',
     "redlink_pass": '',
     "youtube_key": "",
-    "imgur_client_id": "",
-    "imgur_client_secret": "",
+    "imgur_id": "",
+    "imgur_secret": "",
 }
