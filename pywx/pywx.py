@@ -2,14 +2,21 @@
 # -*- coding: utf-8 -*-
 
 import pythabot
+import os
 import sys
+import imp
+import argparse
 from modules import *
 
-#from IPython.core import ultratb
-#sys.excepthook = ultratb.FormattedTB(mode='Verbose', color_scheme='Linux', call_pdb=1)
+parser = argparse.ArgumentParser()
+parser.add_argument("config_file", help="path to the config file")
+args = parser.parse_args()
+
 
 try:
-    from local_config import config
+    local_config = imp.load_source('local_config', args.config_file)
+    config = local_config.config
+    config['pywx_path'] = os.path.dirname(os.path.abspath(__file__))
 except ImportError, e:
     log.error('missing local_config.py')
     sys.exit()

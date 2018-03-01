@@ -111,7 +111,7 @@ class BaseWeather(base.Command):
 
     def load_airports(self):
         airport_lookup = {}
-        adb = self.config.get('airportdb')
+        adb = self.config.get('pywx_path') + '/airports.dat'
         if adb and os.path.exists(adb):
             for ap in csv.reader(open(adb)):
                 ap = map(lambda x: '' if x == '\\N' else x, ap)
@@ -361,7 +361,10 @@ class Alert(BaseWeather):
         return parser.parse_args(msg)
 
     def run(self, msg):
-        payload = super(Alert, self).context(msg)
+        try:
+            payload = super(Alert, self).context(msg)
+        except base.ArgumentError:
+            return ['piss']
         forecast = payload['forecast']
 
         alert_index = payload['args'].alert_index[0]
