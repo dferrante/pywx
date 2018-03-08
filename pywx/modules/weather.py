@@ -16,8 +16,6 @@ from jinja2 import contextfilter
 from registry import register
 
 
-geoloc = GoogleV3()
-
 epoch_tz_dt = lambda ts, tz='UTC': datetime.datetime.fromtimestamp(ts, tz=pytz.utc).astimezone(pytz.timezone(tz))
 first_greater_selector = lambda i, l: [r for c, r in l if c >= i][0]
 hms = lambda s: ''.join(['%s%s' % (n,l) for n,l in filter(lambda x: bool(x[0]), [(s/60/60, 'h'), (s/60%60, 'm'), (s%60%60, 's')])])
@@ -95,6 +93,7 @@ class BaseWeather(base.Command):
         self.airport_lookup = self.load_airports()
         db = dataset.connect(config['database'])
         self.usertable = db['users']
+        self.geoloc = GoogleV3(api_key=config['youtube_key'])
 
     def load_filters(self):
         super(BaseWeather, self).load_filters()
@@ -157,7 +156,7 @@ class BaseWeather(base.Command):
         llmatch = re.compile(r'([0-9.-]+),([0-9.-]+)').match(location.lower())
         if llmatch:
             lat, lng = llmatch.groups()
-            loc = geoloc.reverse((lat, lng), exactly_one=True)
+            loc = self.geoloc.reverse((lat, lng), exactly_one=True)
             name = loc.address
             match = True
 
@@ -176,11 +175,14 @@ class BaseWeather(base.Command):
 
         if not match:
             try:
-                loc = geoloc.geocode(location, exactly_one=True)
+                loc = self.geoloc.geocode(location, exactly_one=True)
                 name = loc.address
                 lat = loc.latitude
                 lng = loc.longitude
-            except:
+            except Exception, e:
+                import ipdb
+                ipdb.set_trace()
+
                 raise base.ArgumentError('Location not found')
         self.usertable.upsert(dict(user=username, place=name, latitude=lat, longitude=lng), ['user'])
         return name, lat, lng
