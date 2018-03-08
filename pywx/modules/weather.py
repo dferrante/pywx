@@ -190,7 +190,10 @@ class BaseWeather(base.Command):
     def context(self, msg):
         args = self.parse_args(msg)
         name, lat, lng = self.match_location(msg['sender'], args.location)
-        unit_type = 'si' if args.C else 'us' if args.F else 'auto'
+        if hasattr(args, 'C') and hasattr(args, 'F'):
+            unit_type = 'si' if args.C else 'us' if args.F else 'auto'
+        else:
+            unit_type = 'auto'
         forecast = forecastio.load_forecast(self.config['forecast_io_secret'], float(lat), float(lng), units=unit_type)
         units = self.get_units(forecast.json['flags']['units'])
         payload = {
