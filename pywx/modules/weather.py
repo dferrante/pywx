@@ -211,11 +211,31 @@ class BaseWeather(base.Command):
 class WeatherForecast(BaseWeather):
     template = u"""
         {{ name|nc }}:
-        {% for day in forecast.daily().data[:5] %}
+        {% for day in dailies %}
             {{ day.time.strftime('%a')|c('maroon') }}:
             {{ day.summary|ic(day.icon) }}
             (⇑ {{ day.temperatureMax|ctemp }}/⇓ {{ day.temperatureMin|ctemp }})
         {% endfor %}"""
+
+    def context(self, msg):
+        payload = super(WeatherForecast, self).context(msg)
+        forecast = payload['forecast']
+        units = payload['units']
+        timezone = pytz.timezone(forecast.json['timezone'])
+
+        daily = forecast.daily().data[:5]
+        dailies = []
+        for d in daily:
+            day = {
+               'time': pytz.utc.localize(d.time).astimezone(timezone),
+               'icon': d.icon,
+               'summary': d.summary,
+               'temperatureMin': d.temperatureMin,
+               'temperatureMax': d.temperatureMax,
+            }
+            dailies.append(day)
+        payload['dailies'] = dailies
+        return payload
 
 
 @register(commands=['hf',])
