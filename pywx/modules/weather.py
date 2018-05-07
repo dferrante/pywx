@@ -233,13 +233,12 @@ class HourlyForecast(BaseWeather):
         forecast = payload['forecast']
         units = payload['units']
         timezone = pytz.timezone(forecast.json['timezone'])
-        local_tz = pytz.timezone('US/Eastern')
 
         hourly = forecast.hourly().data[:12]
         hourlies = []
         for h in hourly:
             hour = {
-               'time': local_tz.localize(h.time).astimezone(timezone),
+               'time': pytz.utc.localize(h.time).astimezone(timezone),
                'icon': h.icon,
                'summary': h.summary,
                'temperature': h.temperature,
