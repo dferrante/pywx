@@ -1,6 +1,7 @@
 import json
 from . import base
 from registry import register
+import os
 
 
 @register(commands=['define','what', "what's"])
@@ -9,7 +10,8 @@ class Acronym(base.Command):
 
     def context(self, msg):
         payload = {}
-        acronyms = json.load(open('./acro.json'))
+        acronym_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'acro.json')
+        acronyms = json.load(open(acronym_file))
         word = msg['args']
 
         if word[:3] == 'is ':
