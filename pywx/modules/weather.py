@@ -180,9 +180,6 @@ class BaseWeather(base.Command):
                 lat = loc.latitude
                 lng = loc.longitude
             except Exception, e:
-                import ipdb
-                ipdb.set_trace()
-
                 raise base.ArgumentError('Location not found')
         self.usertable.upsert(dict(user=username, place=name, latitude=lat, longitude=lng), ['user'])
         return name, lat, lng
