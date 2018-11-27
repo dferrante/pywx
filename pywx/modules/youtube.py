@@ -97,7 +97,7 @@ class TwitchParser(ParserCommand):
                 livestreams = client.streams.get_live_streams([userid,])
                 if len(livestreams):
                     ls = livestreams[0]
-                    ago = (datetime.datetime.now() - ls['created_at']).seconds / 1000
+                    ago = (ls['created_at'] - datetime.datetime.now()).seconds
                     lines.append("TWITCH: {} is LIVE, playing {} with {} viewers (started {} ago)".format(username, ls['game'], ls['viewers'], hms(ago)))
             except:
                 continue
