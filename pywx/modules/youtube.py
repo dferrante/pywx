@@ -1,14 +1,10 @@
 from apiclient.discovery import build
 from apiclient.errors import HttpError
 from oauth2client.tools import argparser
-from twitch import TwitchClient
 import urlparse
-import datetime
 from .base import ParserCommand
 from registry import register_parser
 
-
-hms = lambda s: ''.join(['%s%s' % (n,l) for n,l in filter(lambda x: bool(x[0]), [(s/60/60, 'h'), (s/60%60, 'm'), (s%60%60, 's')])])
 
 def pretty_iso_duration(iso_duration):
     dd = {}
@@ -75,31 +71,3 @@ class YoutubeParser(ParserCommand):
             lines.append("YOUTUBE: %s [%s]" % (title, duration))
         return lines
 
-@register_parser
-class TwitchParser(ParserCommand):
-    def parse(self, msg):
-        lines = []
-        for word in msg['msg'].split():
-            username = None
-            try:
-                url = urlparse.urlparse(word)
-                if 'twitch.tv' in url.netloc:
-                    username = url.path.split('/')[1]
-            except:
-                continue
-
-            if not username:
-                continue
-
-            try:
-                client = TwitchClient(client_id=self.config['twitch_client'], oauth_token=self.config['twitch_secret'])
-                userid = client.users.translate_usernames_to_ids([username])[0]['id']
-                livestreams = client.streams.get_live_streams([userid,])
-                if len(livestreams):
-                    ls = livestreams[0]
-                    ago = (ls['created_at'] - datetime.datetime.now()).seconds
-                    lines.append("TWITCH: {} is LIVE, playing {} with {} viewers (started {} ago)".format(username, ls['game'], ls['viewers'], hms(ago)))
-            except:
-                continue
-
-        return lines
