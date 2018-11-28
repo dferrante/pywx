@@ -5,6 +5,9 @@ from .base import ParserCommand, NoMessage, Command
 from registry import register_parser, register_periodic
 
 
+global twdb
+twdb = None
+
 hms = lambda s: ''.join(['%s%s' % (n,l) for n,l in filter(lambda x: bool(x[0]), [(s/60/60, 'h'), (s/60%60, 'm'), (s%60%60, 's')])])
 
 @register_parser
