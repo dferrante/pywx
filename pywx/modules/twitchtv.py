@@ -8,9 +8,6 @@ from twitch import TwitchClient
 global twdb
 twdb = None
 
-global twdb
-twdb = None
-
 hms = lambda s: ''.join(['%s%s' % (n,l) for n,l in filter(lambda x: bool(x[0]), [(s/60/60, 'h'), (s/60%60, 'm'), (s%60%60, 's')])])
 
 @register_parser
@@ -75,8 +72,8 @@ class TwitchAlerter(TwitchAlert):
     def context(self, msg):
         global twdb
         livestreams = self.get_streams()
-        # if twdb is None:
-        #     twdb = []
+        if twdb is None:
+            twdb = []
         #     for ls in livestreams:
         #         twdb.append(ls['id'])
 
