@@ -42,7 +42,7 @@ class TwitchParser(ParserCommand):
 
 class TwitchAlert(Command):
     template = u"""
-        {{ 'TWITCH'|nc }}: {{ username|tc }} is {{ 'LIVE'|c('red') }}, playing {{ game|tc }} with {{ viewers|tc }} viewers (started {{ ago }} ago)
+        {{ 'TWITCH'|nc }}: {{ username|tc }} is {{ 'LIVE'|c('red') }}, playing {{ game|tc }} with {{ viewers|tc }} viewers (started {{ ago }} ago) https://www.twitch.tv/{{ username}}
         """
 
     def stream_context(self, ls):
@@ -74,8 +74,8 @@ class TwitchAlerter(TwitchAlert):
         livestreams = self.get_streams()
         if twdb is None:
             twdb = []
-        #     for ls in livestreams:
-        #         twdb.append(ls['id'])
+            for ls in livestreams:
+                twdb.append(ls['id'])
 
         for ls in livestreams:
             if ls['id'] in twdb:
