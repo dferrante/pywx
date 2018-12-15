@@ -45,7 +45,7 @@ class TwitchAlert(Command):
         {{ 'TWITCH'|nc }}: {{ username|tc }} is {{ 'LIVE'|c('red') }}, playing {{ game|tc }} with {{ viewers|tc }} viewers (started {{ ago }} ago)
         """
 
-    def stream_context(ls):
+    def stream_context(self, ls):
         ago = hms(int((pytz.timezone('US/Eastern').localize(datetime.datetime.now()) - pytz.utc.localize(ls['created_at'])).total_seconds()))
         payload = {
             'username': ls['channel']['name'],
