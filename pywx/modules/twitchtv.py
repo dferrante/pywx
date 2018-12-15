@@ -1,9 +1,12 @@
-from twitch import TwitchClient
 import urlparse
 import datetime
+import pytz
 from .base import ParserCommand, NoMessage, Command
 from registry import register_parser, register_periodic
+from twitch import TwitchClient
 
+global twdb
+twdb = None
 
 global twdb
 twdb = None
@@ -32,8 +35,8 @@ class TwitchParser(ParserCommand):
                 livestreams = client.streams.get_live_streams([userid,])
                 if len(livestreams):
                     ls = livestreams[0]
-                    ago = (ls['created_at'] - datetime.datetime.now()).seconds
-                    lines.append("TWITCH: {} is LIVE, playing {} with {} viewers (started {} ago)".format(username, ls['game'], ls['viewers'], hms(ago)))
+                    ago = hms(int((pytz.timezone('US/Eastern').localize(datetime.datetime.now()) - pytz.utc.localize(ls['created_at'])).total_seconds()))
+                    lines.append("TWITCH: {} is LIVE, playing {} with {} viewers (started {} ago)".format(username, ls['game'], ls['viewers'], ago))
             except:
                 continue
 
@@ -45,8 +48,8 @@ class TwitchAlert(Command):
         {{ 'TWITCH'|nc }}: {{ username|tc }} is {{ 'LIVE'|c('red') }}, playing {{ game|tc }} with {{ viewers|tc }} viewers (started {{ ago }} ago)
         """
 
-    def stream_context(self, ls):
-        ago = hms((ls['created_at'] - datetime.datetime.now()).seconds)
+    def stream_context(ls):
+        ago = hms(int((pytz.timezone('US/Eastern').localize(datetime.datetime.now()) - pytz.utc.localize(ls['created_at'])).total_seconds()))
         payload = {
             'username': ls['channel']['name'],
             'game': ls['game'],
@@ -72,10 +75,10 @@ class TwitchAlerter(TwitchAlert):
     def context(self, msg):
         global twdb
         livestreams = self.get_streams()
-        if twdb is None:
-            twdb = []
-            for ls in livestreams:
-                twdb.append(ls['id'])
+        # if twdb is None:
+        #     twdb = []
+        #     for ls in livestreams:
+        #         twdb.append(ls['id'])
 
         for ls in livestreams:
             if ls['id'] in twdb:

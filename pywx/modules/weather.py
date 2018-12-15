@@ -90,8 +90,8 @@ def color_temp(ctx, temp):
 class BaseWeather(base.Command):
     def __init__(self, config):
         super(BaseWeather, self).__init__(config)
-        self.airport_lookup = self.load_airports()
         db = dataset.connect(config['database'])
+        self.airport_lookup = self.load_airports()
         self.usertable = db['users']
         self.geoloc = GoogleV3(api_key=config['youtube_key'])
 
@@ -160,7 +160,7 @@ class BaseWeather(base.Command):
             name = loc.address
             match = True
 
-        airport = self.airport_lookup.get(location)
+        airport = self.airport_lookup.get(location.lower())
         if not match and airport:
             match = True
             code = "(%s)" % ('/'.join(filter(lambda x: bool(x), [airport.faa, airport.icao])))
