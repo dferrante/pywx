@@ -54,7 +54,7 @@ class TwitchAlert(Command):
             'game': ls['game'],
             'viewers': ls['viewers'],
             'ago': ago,
-            'status', ls['channel'].get('status')
+            'status': ls['channel'].get('status')
         }
         return payload
 
