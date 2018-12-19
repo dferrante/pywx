@@ -4,7 +4,7 @@ import string
 import time
 import datetime
 import logging as log
-log.basicConfig(level=log.DEBUG, format="%(asctime)-15s %(levelname)s %(message)s")
+log.basicConfig(level=log.INFO, format="%(asctime)-15s %(levelname)s %(message)s")
 
 
 class Pythabot:

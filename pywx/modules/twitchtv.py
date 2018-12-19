@@ -4,6 +4,8 @@ import pytz
 from .base import ParserCommand, NoMessage, Command
 from registry import register_parser, register_periodic
 from twitch import TwitchClient
+import logging as log
+log.basicConfig(level=log.INFO, format="%(asctime)-15s %(levelname)s %(message)s")
 
 global twdb
 twdb = None
@@ -71,7 +73,9 @@ class TwitchAlerter(TwitchAlert):
 
     def context(self, msg):
         global twdb
+        log.info('twdb: {}'.format(twdb))
         livestreams = self.get_streams()
+        log.info('streams: {}'.format(livestreams))
         if twdb is None:
             twdb = []
             for ls in livestreams:
