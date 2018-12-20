@@ -68,8 +68,9 @@ class TwitchAlerter(TwitchAlert):
             userids.append(user['id'])
 
         livestreams = []
-        for ls in client.streams.get_live_streams(userids):
-            livestreams.append(ls)
+        for uid in userids:
+            for ls in client.streams.get_live_streams([uid,]):
+                livestreams.append(ls)
         return livestreams
 
     def context(self, msg):
@@ -79,6 +80,7 @@ class TwitchAlerter(TwitchAlert):
             twdb = []
             for ls in livestreams:
                 twdb.append(ls['id'])
+                log.info('twitch stream running for {}'.format(ls['channel']['name']))
 
         for ls in livestreams:
             if ls['id'] in twdb:
