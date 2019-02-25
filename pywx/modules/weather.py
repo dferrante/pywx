@@ -273,6 +273,7 @@ class CurrentWeather(BaseWeather):
     {% if wind_chill %} {{ 'Wind Chill'|c('navy') }}: {{ wind_chill|ctemp }} {% endif %}
     {% if heat_index %} {{ 'Heat Index'|c('red') }}: {{ heat_index|ctemp }} {% endif %}
     {{ 'Winds'|tc }}: {{ windspeed }}
+    {% if windgust %} {{ 'Gusts'|c('red') }}: {{ windgust }} {% endif %}
     {{ 'Clouds'|tc }}: {{ clouds }}%
     {{ 'Dewpoint'|tc }}: {{ current.dewPoint|temp }}
     {{ 'Humidity'|tc }}: {{ humidity }}%
@@ -299,7 +300,19 @@ class CurrentWeather(BaseWeather):
             payload['heat_index'] = heat_index_si(current.temperature, current.humidity*100)
 
         windspeed = current.windSpeed if forecast.json['flags']['units'] != 'si' else current.windSpeed*3.6 #convert m/s to kph
-        payload['windspeed'] = '%s%s from %s' % (int(windspeed), units.wind, first_greater_selector(current.windBearing, wind_directions))
+        payload['windspeed'] = '%s%s %s' % (int(windspeed), units.wind, first_greater_selector(current.windBearing, wind_directions))
+        if current.windGust > 20 and units.wind == 'mph':
+            payload['windgust'] = int(round(current.windGust))
+        elif current.windGust > 32 and units.wind == 'kph':
+            payload['windgust'] = int(round(current.windGust))
+        elif current.windGust > 8 and units.wind == 'm/s':
+            payload['windgust'] = round(current.windGust, 1)
+        else:
+            payload['windgust'] = None
+
+        if payload['windgust']:
+            payload['windgust'] = "{}{}".format(payload['windgust'], units.wind)
+
         payload['humidity'] = int(current.humidity*100)
         payload['clouds'] = int(current.cloudCover*100)
 
