@@ -12,7 +12,7 @@ imgur_regexes = (
 )
 
 
-@register_parser
+#@register_parser
 class ImgurParser(ParserCommand):
     def __init__(self, config):
         super(ImgurParser, self).__init__(config)
