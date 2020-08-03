@@ -70,7 +70,10 @@ alert_colors = (
 temp_colors = ((-100, 'pink'), (15, 'pink'), (32, 'royal'), (50, 'green'), (65, 'lime'), (75, 'yellow'), (85, 'orange'), (150, 'red'))
 dewpoint_colors = ((-100, 'royal'), (15, 'green'), (60, 'lime'), (65, 'yellow'), (70, 'orange'), (75, 'red'), (150, 'red'))
 
+spark_graph = list(u"▁▂▃▅▇")
+
 Airport = collections.namedtuple('Airport', 'airport_id name city country faa icao lat long alt tz dst')
+
 
 
 class LocationNotFound(Exception):
@@ -95,6 +98,44 @@ def color_dewpoint(ctx, temp):
     bold = True if ct > 75 else False
     return base.irc_color(pretty_temp(ctx, temp), color, bold=bold)
 
+@contextfilter
+def spark_temp(ctx, temps):
+    graph_line_selector = zip([min(temps)+((max(temps)-min(temps))/5.0*x) for x in range(5)], spark_graph) + [(max(temps)+1, spark_graph[-1])]
+    graph = []
+
+    for temp in temps:
+        ct = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
+        color = first_greater_selector(ct, temp_colors)
+        bar = first_greater_selector(temp, graph_line_selector)
+        graph.append(base.irc_color(bar, color))
+    return ''.join(graph)
+
+@contextfilter
+def spark_dewpoint(ctx, temps):
+    graph_line_selector = zip([min(temps)+((max(temps)-min(temps))/5.0*x) for x in range(5)], spark_graph) + [(max(temps)+1, spark_graph[-1])]
+    graph = []
+
+    for temp in temps:
+        ct = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
+        color = first_greater_selector(ct, dewpoint_colors)
+        bar = first_greater_selector(temp, graph_line_selector)
+        graph.append(base.irc_color(bar, color))
+    return ''.join(graph)
+
+@contextfilter
+def spark_precip(ctx, precips):
+    graph_line_selector = zip([0,0.1,0.3,0.6,0.8,1], spark_graph) + [(1, spark_graph[-1])]
+    graph = []
+
+    for precip in precips:
+        color = 'green' if precip[1] == 'rain' else 'purple' if precip[1] == 'snow' else 'aqua' if precip[1] == 'sleet' else 'white'
+        if precip[0] < 0.1:
+            color = 'white'
+        bar = first_greater_selector(precip[0], graph_line_selector)
+        graph.append(base.irc_color(bar, color))
+    return ''.join(graph)
+
+
 class BaseWeather(base.Command):
     def __init__(self, config):
         super(BaseWeather, self).__init__(config)
@@ -108,6 +149,9 @@ class BaseWeather(base.Command):
         self.environment.filters['temp'] = pretty_temp
         self.environment.filters['ctemp'] = color_temp
         self.environment.filters['dptemp'] = color_dewpoint
+        self.environment.filters['spark_temp'] = spark_temp
+        self.environment.filters['spark_dewpoint'] = spark_dewpoint
+        self.environment.filters['spark_precip'] = spark_precip
         self.environment.filters['ic'] = lambda val, icon: base.irc_color(val, icon_colors[icon])
         self.environment.filters['icon_colors'] = icon_colors
         self.environment.filters['alert_colors'] = alert_colors
@@ -333,6 +377,56 @@ class HourlyForecast(BaseWeather):
         payload['hourlies'] = hourlies
         return payload
 
+
+@register(commands=['hfx',])
+class HourlyForecast(BaseWeather):
+    template = u"""
+        {{ name|nc }}:
+        {{ "Temp"|c('maroon') }}: {{ temps|spark_temp }}
+        {{ "Dewpoint"|c('maroon') }}: {{ dewpoints|spark_dewpoint }}
+        {{ "Precip"|c('maroon') }}: {{ precip|spark_precip }}
+        """
+
+    def parse_args(self, msg):
+        parser = base.IRCArgumentParser()
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument('-F', action="store_true")
+        group.add_argument('-C', action="store_true")
+        parser.add_argument('location', type=str, default=None, nargs='*')
+        return parser.parse_args(msg)
+
+    def context(self, msg):
+        payload = super(HourlyForecast, self).context(msg)
+        forecast = payload['forecast']
+        units = payload['units']
+        timezone = pytz.timezone(forecast.json['timezone'])
+
+        hourly = forecast.hourly().data[:12]
+        hourlies = []
+        for h in hourly:
+            hour = {
+               'time': pytz.utc.localize(h.time).astimezone(timezone),
+               'icon': h.icon,
+               'summary': h.summary,
+               'temperature': h.temperature,
+               'dewpoint': h.dewPoint,
+            }
+
+            if h.precipProbability > 0:
+                hour['precip_prob'] = h.precipProbability
+                hour['precip_type'] = h.precipType
+            else:
+                hour['precip_prob'] = 0
+                hour['precip_type'] = False
+
+            windspeed = h.windSpeed if forecast.json['flags']['units'] != 'si' else h.windSpeed*3.6 #convert m/s to kph
+            hour['windspeed'] = '%s%s %s' % (int(windspeed), units.wind, first_greater_selector(h.windBearing, wind_directions))
+            hourlies.append(hour)
+
+        payload['temps'] = [x['temperature'] for x in hourlies]
+        payload['dewpoints'] = [x['dewpoint'] for x in hourlies]
+        payload['precip'] = [(x['precip_prob'], x['precip_type']) for x in hourlies]
+        return payload
 
 
 @register(commands=['wx',])
