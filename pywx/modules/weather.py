@@ -68,6 +68,7 @@ alert_colors = (
     ('special', 'null'),
 )
 temp_colors = ((-100, 'pink'), (15, 'pink'), (32, 'royal'), (50, 'green'), (65, 'lime'), (75, 'yellow'), (85, 'orange'), (150, 'red'))
+dewpoint_colors = ((-100, 'royal'), (15, 'green'), (60, 'lime'), (65, 'yellow'), (70, 'orange'), (75, 'red'), (150, 'red'))
 
 Airport = collections.namedtuple('Airport', 'airport_id name city country faa icao lat long alt tz dst')
 
@@ -87,6 +88,13 @@ def color_temp(ctx, temp):
     bold = True if ct > 100 else False
     return base.irc_color(pretty_temp(ctx, temp), color, bold=bold)
 
+@contextfilter
+def color_dewpoint(ctx, temp):
+    ct = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
+    color = first_greater_selector(ct, dewpoint_colors)
+    bold = True if ct > 75 else False
+    return base.irc_color(pretty_temp(ctx, temp), color, bold=bold)
+
 class BaseWeather(base.Command):
     def __init__(self, config):
         super(BaseWeather, self).__init__(config)
@@ -99,6 +107,7 @@ class BaseWeather(base.Command):
         super(BaseWeather, self).load_filters()
         self.environment.filters['temp'] = pretty_temp
         self.environment.filters['ctemp'] = color_temp
+        self.environment.filters['dptemp'] = color_dewpoint
         self.environment.filters['ic'] = lambda val, icon: base.irc_color(val, icon_colors[icon])
         self.environment.filters['icon_colors'] = icon_colors
         self.environment.filters['alert_colors'] = alert_colors
@@ -237,7 +246,7 @@ class WeatherForecast(BaseWeather):
 
 @register(commands=['hf',])
 class HourlyForecast(BaseWeather):
-    template = u"""
+    temp_template = u"""
         {{ name|nc }}:
         {% for hour in hourlies %}
             {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
@@ -245,11 +254,48 @@ class HourlyForecast(BaseWeather):
             {{ hour.temperature|ctemp }}
         {% endfor %}"""
 
+    wind_template = u"""
+        {{ name|nc }} {{ 'Winds'|nc }}:
+        {% for hour in hourlies %}
+            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
+            {{ hour.windspeed }}
+            {% if hour.windgust %} {{ 'G'|c('red') }}: {{ hour.windgust }} {% endif %}
+        {% endfor %}"""
+
+    dewpoint_template = u"""
+        {{ name|nc }} {{ 'Dewpoints'|nc }}:
+        {% for hour in hourlies %}
+            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
+            {{ hour.dewpoint|dptemp }}
+        {% endfor %}"""
+
+    precip_template = u"""
+        {{ name|nc }} {{ 'Precip'|nc }}:
+        {% for hour in hourlies %}
+            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
+            {% if hour.precip_type %} {{ hour.precip_type|ic(hour.icon) }} ({{ hour.precip_prob }}%) {% else %} - {% endif %}
+        {% endfor %}"""
+
+    def parse_args(self, msg):
+        parser = base.IRCArgumentParser()
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument('-F', action="store_true")
+        group.add_argument('-C', action="store_true")
+        group.add_argument('-d', action="store_true")
+        group.add_argument('-w', action="store_true")
+        group.add_argument('-p', action="store_true")
+        parser.add_argument('location', type=str, default=None, nargs='*')
+        return parser.parse_args(msg)
+
     def context(self, msg):
         payload = super(HourlyForecast, self).context(msg)
         forecast = payload['forecast']
         units = payload['units']
         timezone = pytz.timezone(forecast.json['timezone'])
+
+        self.template = self.precip_template if payload['args'].p else self.temp_template
+        self.template = self.dewpoint_template if payload['args'].d else self.template
+        self.template = self.wind_template if payload['args'].w else self.template
 
         hourly = forecast.hourly().data[:12]
         hourlies = []
@@ -259,8 +305,31 @@ class HourlyForecast(BaseWeather):
                'icon': h.icon,
                'summary': h.summary,
                'temperature': h.temperature,
+               'dewpoint': h.dewPoint,
             }
+
+            if h.precipProbability > 0:
+                hour['precip_prob'] = int(h.precipProbability*100)
+                hour['precip_type'] = h.precipType.title()
+            else:
+                hour['precip_prob'] = 0
+                hour['precip_type'] = False
+
+            windspeed = h.windSpeed if forecast.json['flags']['units'] != 'si' else h.windSpeed*3.6 #convert m/s to kph
+            hour['windspeed'] = '%s%s %s' % (int(windspeed), units.wind, first_greater_selector(h.windBearing, wind_directions))
+            if h.windGust > 20 and units.wind == 'mph':
+                hour['windgust'] = int(round(h.windGust))
+            elif h.windGust > 32 and units.wind == 'kph':
+                hour['windgust'] = int(round(h.windGust))
+            elif h.windGust > 8 and units.wind == 'm/s':
+                hour['windgust'] = round(h.windGust, 1)
+            else:
+                hour['windgust'] = None
+
+            if hour['windgust']:
+                hour['windgust'] = "{}{}".format(hour['windgust'], units.wind)
             hourlies.append(hour)
+
         payload['hourlies'] = hourlies
         return payload
 
