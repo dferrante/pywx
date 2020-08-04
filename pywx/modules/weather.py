@@ -379,7 +379,7 @@ class HourlyForecast(BaseWeather):
 
 
 @register(commands=['hfx',])
-class HourlyForecast(BaseWeather):
+class HourlySparkForecast(BaseWeather):
     template = u"""
         {{ name|nc }}:
         {{ "Temp"|c('maroon') }}: {{ temps|spark_temp }}
@@ -396,7 +396,7 @@ class HourlyForecast(BaseWeather):
         return parser.parse_args(msg)
 
     def context(self, msg):
-        payload = super(HourlyForecast, self).context(msg)
+        payload = super(HourlySparkForecast, self).context(msg)
         forecast = payload['forecast']
         units = payload['units']
         timezone = pytz.timezone(forecast.json['timezone'])
