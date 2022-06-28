@@ -90,7 +90,7 @@ class Pythabot:
     def listen(self):
         try:
             while 1:
-                self.buffer = self.buffer + self.sock.recv(1024)
+                self.buffer = self.buffer + self.sock.recv(1024).decode('utf-8')
                 log.debug(self.buffer.strip())
                 if (("MOTD" in self.buffer or 'End of message of the day' in self.buffer) and self.debounce == False):
                     if 'nickserv_pass' in self.config:
@@ -105,7 +105,7 @@ class Pythabot:
                 self.buffer = temp.pop()
 
                 for line in temp:
-                    line = string.rstrip(line)
+                    line = line.rstrip()
                     line = line.split(" ")
 
                     if line[1] == "433":
@@ -125,11 +125,13 @@ class Pythabot:
             self.connect()
 
     def sendraw(self, msg):
-        self.sock.send(msg + "\r\n")
+        msg += "\r\n"
+        self.sock.send(msg.encode('utf-8'))
 
     def privmsg(self, to, msg):
         log.info('PRIVMSG: %s', msg.encode('utf-8'))
-        self.sock.send("PRIVMSG %s :%s\r\n" % (to, msg.encode('utf-8')))
+        fullmsg = f'PRIVMSG {to} :{msg}\r\n'.encode('utf-8')
+        self.sock.send(fullmsg)
 
     def quit(self, errmsg):
         log.error("%s" % errmsg)
