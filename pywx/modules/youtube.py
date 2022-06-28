@@ -1,7 +1,7 @@
 from apiclient.discovery import build
 from apiclient.errors import HttpError
 from oauth2client.tools import argparser
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 from .base import ParserCommand
 from .registry import register_parser
 
@@ -42,9 +42,9 @@ class YoutubeParser(ParserCommand):
         for word in msg['msg'].split():
             vid = None
             try:
-                url = urlparse.urlparse(word)
+                url = urlparse(word)
                 if 'youtube' in url.netloc:
-                    qs = urlparse.parse_qs(url.query)
+                    qs = parse_qs(url.query)
                     vid = qs.get('v')[0] if 'v' in qs else None
                     if not vid:
                         split = url.path.split('/')
