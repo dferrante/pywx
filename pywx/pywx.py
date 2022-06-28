@@ -25,8 +25,15 @@ if __name__ == '__main__':
     reg = registry.registry
     reg.load_modules(config)
 
-    print(reg.commands['hfx'].run(({'sender': 'mach5', 'args': '08809'})))
+    # print(reg.commands['wxtime'].run(({'sender': 'mach5', 'args': '08809'})))
+    # parsed_things = []
+    # msg = {'msg': 'https://www.youtube.com/watch?v=_yncRe05nS0'}
+    # for parser in reg.parsers:
+    #     for line in parser.parse(msg):
+    #         parsed_things.append(line)
+    # for line in parsed_things:
+    #     print(line)
 
-    # bot = pythabot.Pythabot(config, reg)
-    # bot.connect()
-    # bot.listen()
+    bot = pythabot.Pythabot(config, reg)
+    bot.connect()
+    bot.listen()
