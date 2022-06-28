@@ -4,7 +4,7 @@ import requests
 import re
 import pytz
 from . import base
-from registry import register, register_periodic
+from .registry import register, register_periodic
 
 
 global eqdb

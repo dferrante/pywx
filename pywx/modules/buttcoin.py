@@ -1,7 +1,7 @@
 import datetime
 import requests
 from . import base
-from registry import register
+from .registry import register
 
 
 hms = lambda s: ''.join(['%s%s' % (n,l) for n,l in filter(lambda x: bool(x[0]), [(s/60/60, 'h'), (s/60%60, 'm'), (s%60%60, 's')])])

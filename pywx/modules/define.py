@@ -1,6 +1,6 @@
 import json
 from . import base
-from registry import register
+from .registry import register
 import os
 
 

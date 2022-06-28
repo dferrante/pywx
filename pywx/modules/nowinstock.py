@@ -1,7 +1,7 @@
 import datetime
 import requests
 from . import base
-from registry import register
+from .registry import register
 import bs4
 import re
 from decimal import Decimal

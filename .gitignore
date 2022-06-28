@@ -9,3 +9,6 @@ share
 *.db
 *~
 local_config.py
+*.db-*
+.python-version
+*.vscode*

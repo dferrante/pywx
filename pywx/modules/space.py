@@ -1,6 +1,6 @@
 import requests
 from . import base
-from registry import register
+from .registry import register
 
 
 swx_colors = dict(enumerate(['lime', 'yellow', 'yellow', 'orange', 'red', 'red']))

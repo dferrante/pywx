@@ -17,7 +17,7 @@ try:
     local_config = imp.load_source('local_config', args.config_file)
     config = local_config.config
     config['pywx_path'] = os.path.dirname(os.path.abspath(__file__))
-except ImportError, e:
+except ImportError:
     log.error('missing local_config.py')
     sys.exit()
 
@@ -25,6 +25,8 @@ if __name__ == '__main__':
     reg = registry.registry
     reg.load_modules(config)
 
-    bot = pythabot.Pythabot(config, reg)
-    bot.connect()
-    bot.listen()
+    print(reg.commands['hfx'].run(({'sender': 'mach5', 'args': '08809'})))
+
+    # bot = pythabot.Pythabot(config, reg)
+    # bot.connect()
+    # bot.listen()

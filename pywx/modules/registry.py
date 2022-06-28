@@ -11,12 +11,12 @@ class Register(object):
         self.periodic_klasses = {}
 
     def load_modules(self, config):
-        for cls, cmds in self.command_klasses.iteritems():
+        for cls, cmds in self.command_klasses.items():
             cmdcls = cls(config)
             for cmd in cmds:
                 self.commands[cmd] = cmdcls
 
-        for cls, attr in self.periodic_klasses.iteritems():
+        for cls, attr in self.periodic_klasses.items():
             self.periodic_tasks[cls(config)] = attr
 
         self.parsers = [cls(config) for cls in self.parser_klasses]

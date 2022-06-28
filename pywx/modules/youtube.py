@@ -1,9 +1,9 @@
 from apiclient.discovery import build
 from apiclient.errors import HttpError
 from oauth2client.tools import argparser
-import urlparse
+from urllib.parse import urlparse
 from .base import ParserCommand
-from registry import register_parser
+from .registry import register_parser
 
 
 def pretty_iso_duration(iso_duration):

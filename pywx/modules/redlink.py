@@ -2,11 +2,11 @@
 import requests
 from . import base
 from .weather import first_greater_selector, temp_colors
-from registry import register
-from jinja2 import contextfilter
+from .registry import register
+from jinja2 import pass_context
 
 
-@contextfilter
+@pass_context
 def color_temp(ctx, temp):
     ct = int(temp)
     color = first_greater_selector(ct, temp_colors)

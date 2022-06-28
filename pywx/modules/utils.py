@@ -7,4 +7,4 @@ def debug(parseinfo):
     ipdb.set_trace()
 
 def colors(parseinfo):
-    bot.privmsg(parseinfo['chan'], " - ".join(["%s%s\x030" % (v,k) for k,v in cmap.iteritems()]))
+    bot.privmsg(parseinfo['chan'], " - ".join(["%s%s\x030" % (v,k) for k,v in cmap.items()]))

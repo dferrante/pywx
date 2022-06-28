@@ -33,7 +33,7 @@ class Pythabot:
             self.quit("Could not connect to port %s, on %s." % (self.config["port"], self.config["host"]))
 
     def run_periodic_commands(self):
-        for task, attrs in self.registry.periodic_tasks.iteritems():
+        for task, attrs in self.registry.periodic_tasks.items():
             if attrs['last_run'] and attrs['last_run'] + attrs['run_every'] >= time.time():
                 continue
             else:
@@ -51,7 +51,7 @@ class Pythabot:
 
         try:
             command, args = msg.split(" ", 1)
-        except ValueError, e:
+        except ValueError:
             command, args = msg, ""
         exapoint = senderline.find("!")
         tildepoint = senderline.find("~") + 1

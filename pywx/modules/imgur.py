@@ -1,7 +1,7 @@
 from .base import ParserCommand, cmap
-from registry import register_parser
+from .registry import register_parser
 from imgurpython import ImgurClient
-import urlparse
+from urllib.parse import urlparse
 import re
 
 imgur_regexes = (

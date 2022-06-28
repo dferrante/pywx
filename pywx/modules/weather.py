@@ -12,8 +12,8 @@ import re
 import os
 from . import base
 from geopy.geocoders import GoogleV3
-from jinja2 import contextfilter
-from registry import register
+from jinja2 import pass_context
+from .registry import register
 
 
 epoch_tz_dt = lambda ts, tz='UTC': datetime.datetime.fromtimestamp(ts, tz=pytz.utc).astimezone(pytz.timezone(tz))
@@ -80,27 +80,27 @@ class LocationNotFound(Exception):
     pass
 
 
-@contextfilter
+@pass_context
 def pretty_temp(ctx, temp):
     return u"%s°%s" % (int(temp), ctx['units'].temp)
 
-@contextfilter
+@pass_context
 def color_temp(ctx, temp):
     ct = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
     color = first_greater_selector(ct, temp_colors)
     bold = True if ct > 100 else False
     return base.irc_color(pretty_temp(ctx, temp), color, bold=bold)
 
-@contextfilter
+@pass_context
 def color_dewpoint(ctx, temp):
     ct = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
     color = first_greater_selector(ct, dewpoint_colors)
     bold = True if ct > 75 else False
     return base.irc_color(pretty_temp(ctx, temp), color, bold=bold)
 
-@contextfilter
+@pass_context
 def spark_temp(ctx, temps):
-    graph_line_selector = zip([min(temps)+((max(temps)-min(temps))/5.0*x) for x in range(5)], spark_graph) + [(max(temps)+1, spark_graph[-1])]
+    graph_line_selector = list(zip([min(temps)+((max(temps)-min(temps))/5.0*x) for x in range(5)], spark_graph)) + [(max(temps)+1, spark_graph[-1])]
     graph = []
 
     for temp in temps:
@@ -110,9 +110,9 @@ def spark_temp(ctx, temps):
         graph.append(base.irc_color(bar, color))
     return ''.join(graph)
 
-@contextfilter
+@pass_context
 def spark_dewpoint(ctx, temps):
-    graph_line_selector = zip([min(temps)+((max(temps)-min(temps))/5.0*x) for x in range(5)], spark_graph) + [(max(temps)+1, spark_graph[-1])]
+    graph_line_selector = list(zip([min(temps)+((max(temps)-min(temps))/5.0*x) for x in range(5)], spark_graph)) + [(max(temps)+1, spark_graph[-1])]
     graph = []
 
     for temp in temps:
@@ -122,9 +122,9 @@ def spark_dewpoint(ctx, temps):
         graph.append(base.irc_color(bar, color))
     return ''.join(graph)
 
-@contextfilter
+@pass_context
 def spark_precip(ctx, precips):
-    graph_line_selector = zip([0,0.1,0.3,0.6,0.8,1], spark_graph) + [(1, spark_graph[-1])]
+    graph_line_selector = list(zip([0,0.1,0.3,0.6,0.8,1], spark_graph)) + [(1, spark_graph[-1])]
     graph = []
 
     for precip in precips:
@@ -232,7 +232,7 @@ class BaseWeather(base.Command):
                 name = loc.address
                 lat = loc.latitude
                 lng = loc.longitude
-            except Exception, e:
+            except Exception:
                 raise base.ArgumentError('Location not found')
         self.usertable.upsert(dict(user=username, place=name, latitude=lat, longitude=lng), ['user'])
         return name, lat, lng
@@ -574,7 +574,7 @@ class Alert(BaseWeather):
         if 'alerts' in forecast.json:
             try:
                 alert = forecast.json['alerts'][alert_index-1]
-            except IndexError, e:
+            except IndexError:
                 return []
             lines.append(alert['title'])
             lines.append(alert['uri'])

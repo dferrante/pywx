@@ -87,12 +87,12 @@ class Command(object):
             context = self.context(msg)
             template = self.environment.from_string(self.template)
             reply = template.render(context)
-        except NoMessage, e:
+        except NoMessage:
             return []
-        except ArgumentError, e:
-            return [e.message]
-        except Exception, e:
-            logging.exception(e)
+        except ArgumentError as exc:
+            return [exc.message]
+        except Exception as exc:
+            logging.exception(exc)
             return []
 
         if not reply:
