@@ -550,9 +550,9 @@ class Alerts(BaseWeather):
         payload['alerts'] = zip(forecast.json.get('alerts', []), map(alert_color, forecast.json.get('alerts', [])))
         return payload
 
-
-@register(commands=['alert',])
-class Alert(BaseWeather):
+#Changed from 'alert' to 'alertdetails' to avoid accidents
+@register(commands=['alertdetails',])
+class AlertDetails(BaseWeather):
     private_only = True
 
     def parse_args(self, msg):
@@ -585,21 +585,21 @@ class Alert(BaseWeather):
         return lines
 
 
-
-@register(commands=['radar',])
-class Radar(BaseWeather):
-    template = "{{ name|nc }}: {{ 'Radar'|tc }}: {{ radarlink }} {{ 'Spark Radar'|tc }}: {{ sparkradarlink }}"
-
-    def context(self, msg):
-        payload = super(Radar, self).context(msg)
-        timezone = payload['forecast'].json['timezone']
-        payload['radarlink'] = 'http://www.srh.noaa.gov/ridge2/ridgenew2/?%s' % (urllib.urlencode({
-            'rid': 'NAT', 'pid': 'N0Q', 'lat': payload['lat'], 'lon': payload['lng'], 'frames': 10, 'zoom': 8, 'fs': '1'
-        }))
-        payload['sparkradarlink'] = 'http://weatherspark.com/forecasts/sparkRadar?%s' % (urllib.urlencode({
-            'lat': round(payload['lat'], 3), 'lon': round(payload['lng'] ,3), 'timeZone': timezone, 'unit': payload['units'].dist
-        }))
-        return payload
+# Disabling radar command since the URLs to which it links are broken
+#@register(commands=['radar',])
+#class Radar(BaseWeather):
+#    template = "{{ name|nc }}: {{ 'Radar'|tc }}: {{ radarlink }} {{ 'Spark Radar'|tc }}: {{ sparkradarlink }}"
+#
+#    def context(self, msg):
+#        payload = super(Radar, self).context(msg)
+#        timezone = payload['forecast'].json['timezone']
+#        payload['radarlink'] = 'http://www.srh.noaa.gov/ridge2/ridgenew2/?%s' % (urllib.urlencode({
+#            'rid': 'NAT', 'pid': 'N0Q', 'lat': payload['lat'], 'lon': payload['lng'], 'frames': 10, 'zoom': 8, 'fs': '1'
+#        }))
+#        payload['sparkradarlink'] = 'http://weatherspark.com/forecasts/sparkRadar?%s' % (urllib.urlencode({
+#            'lat': round(payload['lat'], 3), 'lon': round(payload['lng'] ,3), 'timeZone': timezone, 'unit': payload['units'].dist
+#        }))
+#        return payload
 
 
 @register(commands=['locate', 'find', 'latlng', 'latlong'])
@@ -627,11 +627,11 @@ class Locate(BaseWeather):
             payload['elevation_ft'] = meters_to_feet(elevation)
         return payload
 
-
+# October 14 2023 Eclipse
 @register(commands=['eclipse',])
 class Eclipse(BaseWeather):
     eclipse_api = "https://www.timeanddate.com/scripts/astroserver.php"
-    template = """{{ name|nc }}: {{ 'Apr 8, 2024 Eclipse'|c('maroon') }}:
+    template = """{{ name|nc }}: {{ 'Oct 14 2023 Eclipse'|c('maroon') }}:
         {{ 'Start'|tc }}: {{ start }} {{ 'Max'|tc }}: {{ max }} {{ 'End'|tc }}: {{ end }}
         {{ 'Duration'|tc }}: {{ duration }} {{ 'Magnitude'|tc }}: {{ mag }} {{ 'Obscuration'|tc }}: {{ obs }}%
     """
@@ -640,7 +640,7 @@ class Eclipse(BaseWeather):
         params = {
             'mode': 'localeclipsejson',
             'n': '@%s' % ','.join(map(str, latlng)),
-            'iso': '20240408',
+            'iso': '20231014',
             'zoom': 5,
             'mobile': 0
         }
@@ -654,12 +654,50 @@ class Eclipse(BaseWeather):
             return None
 
     def context(self, msg):
-        payload = super(Locate, self).context(msg)
+        payload = super(Eclipse, self).context(msg)
         eclipse = self.get_eclipse_data((payload['lat'], payload['lng']))
 
-        payload['start'] = eclipse['events'][0]['txt'][15:]
-        payload['max'] = eclipse['events'][1]['txt'][15:]
-        payload['end'] = eclipse['events'][2]['txt'][15:]
+        payload['start'] = eclipse['events'][0]['txt'][16:]
+        payload['max'] = eclipse['events'][1]['txt'][16:]
+        payload['end'] = eclipse['events'][2]['txt'][16:]
+        payload['duration'] = eclipse['duration']['fmt']
+        payload['mag'] = eclipse['mag']
+        payload['obs'] = eclipse['obs'] * 100
+        return payload
+		
+# Old August 21 2017 eclipse		
+@register(commands=['oldeclipse',])
+class OldEclipse(BaseWeather):
+    eclipse_api = "https://www.timeanddate.com/scripts/astroserver.php"
+    template = """{{ name|nc }}: {{ 'Aug 21 Eclipse'|c('maroon') }}:
+        {{ 'Start'|tc }}: {{ start }} {{ 'Max'|tc }}: {{ max }} {{ 'End'|tc }}: {{ end }}
+        {{ 'Duration'|tc }}: {{ duration }} {{ 'Magnitude'|tc }}: {{ mag }} {{ 'Obscuration'|tc }}: {{ obs }}%
+    """
+
+    def get_old_eclipse_data(self, latlng):
+        params = {
+            'mode': 'localeclipsejson',
+            'n': '@%s' % ','.join(map(str, latlng)),
+            'iso': '20170821',
+            'zoom': 5,
+            'mobile': 0
+        }
+        try:
+            req = requests.get(self.eclipse_api, params=params)
+            if req.status_code != 200:
+                return None
+            json = req.json()
+            return json
+        except:
+            return None
+
+    def context(self, msg):
+        payload = super(OldEclipse, self).context(msg)
+        eclipse = self.get_old_eclipse_data((payload['lat'], payload['lng']))
+
+        payload['start'] = eclipse['events'][0]['txt'][10:]
+        payload['max'] = eclipse['events'][1]['txt'][10:]
+        payload['end'] = eclipse['events'][2]['txt'][10:]
         payload['duration'] = eclipse['duration']['fmt']
         payload['mag'] = eclipse['mag']
         payload['obs'] = eclipse['obs'] * 100
