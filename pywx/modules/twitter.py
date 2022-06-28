@@ -15,21 +15,24 @@ class TwitterParser(ParserCommand):
             url = urlparse(word)
             if 'twitter' in url.netloc:
                 path = url.path
-                username = path.split('/')[1]
-                twid = path.split('/')[3]
+                try:
+                    username = path.split('/')[1]
+                    twid = path.split('/')[3]
 
-                data = requests.get("https://api.twitter.com/2/tweets", params={'ids': twid}, headers={'Authorization': f'Bearer {self.config["twitter_token"]}'}).json()
-                if 'errors' in data:
-                    continue
-
-                tweet = data['data'][0]['text']
-                tweetlines = []
-                for tweetline in tweet.split('\n'):
-                    if not tweetline:
+                    data = requests.get("https://api.twitter.com/2/tweets", params={'ids': twid}, headers={'Authorization': f'Bearer {self.config["twitter_token"]}'}).json()
+                    if 'errors' in data:
                         continue
-                    if len(tweetlines) == 0:
-                        tweetlines.append(f'@{username}: {tweetline}')
-                    else:
-                        tweetlines.append(f'{tweetline}')
-                lines.extend(tweetlines)
+
+                    tweet = data['data'][0]['text']
+                    tweetlines = []
+                    for tweetline in tweet.split('\n'):
+                        if not tweetline:
+                            continue
+                        if len(tweetlines) == 0:
+                            tweetlines.append(f'@{username}: {tweetline}')
+                        else:
+                            tweetlines.append(f'{tweetline}')
+                    lines.extend(tweetlines)
+                except Exception as exc:
+                    continue
         return lines
