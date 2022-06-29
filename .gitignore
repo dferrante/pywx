@@ -8,7 +8,7 @@ share
 *.wpu
 *.db
 *~
-local_config.py
+local_config.*
 *.db-*
 .python-version
 *.vscode*

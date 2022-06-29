@@ -6,8 +6,8 @@ import json
 import os
 import sys
 
-from .pythabot import Pythabot
-from .modules import registry
+from pythabot import Pythabot
+from modules import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("config_file", help="path to the config file")
@@ -15,9 +15,7 @@ args = parser.parse_args()
 
 
 try:
-    with open(args.config_file, encoding='utf-8') as config_file:
-        local_config = json.load(config_file)
-    config = local_config['config']
+    config = json.load(open(args.config_file, encoding='utf-8'))
     config['pywx_path'] = os.path.dirname(os.path.abspath(__file__))
 except ImportError:
     print('cant import local_config.py')
@@ -27,7 +25,7 @@ if __name__ == '__main__':
     reg = registry.registry
     reg.load_modules(config)
 
-    # print(reg.commands['wxtime'].run(({'sender': 'mach5', 'args': '08809'})))
+    # print(reg.commands['buttcoin'].run(({'sender': 'mach5', 'args': ''})))
     # parsed_things = []
     # msg = {'msg': 'https://www.youtube.com/watch?v=_yncRe05nS0'}
     # for parser in reg.parsers:
