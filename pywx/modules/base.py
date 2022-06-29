@@ -61,6 +61,8 @@ class IRCArgumentParser(argparse.ArgumentParser):
 
 
 class ParserCommand(object):
+    multiline = False
+
     def __init__(self, config):
         self.config = config
 

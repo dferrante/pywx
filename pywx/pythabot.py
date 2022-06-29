@@ -83,7 +83,10 @@ class Pythabot:
         parsed_things = []
         for parser in self.registry.parsers:
             for line in parser.parse(msg):
-                parsed_things.append(line)
+                if parser.multiline:
+                    self.privmsg(msg['chan'], line)
+                else:
+                    parsed_things.append(line)
         if parsed_things:
             self.privmsg(msg['chan'], ' | '.join(parsed_things))
 
