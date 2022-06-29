@@ -7,6 +7,9 @@ from .registry import register_parser
 
 
 def pretty_iso_duration(iso_duration):
+    if iso_duration == 'P0D':
+        return 'LIVE'
+
     isostring = {}
     num = 0
     timesplit = False
@@ -31,9 +34,9 @@ def pretty_iso_duration(iso_duration):
         if tag in isostring and isostring[tag]:
             duration.append(f'{isostring[tag]} {name}{"s" if isostring[tag] > 1 else ""} ')
     if 'H' in isostring:
-        duration.append(f'{isostring["H"]}:')
+        duration.append(f'{isostring["H"]:02d}:')
 
-    duration.append(f"{isostring.get('MM', 0):2d}:{isostring.get('S', 0):2d}")
+    duration.append(f"{isostring.get('MM', 0):02d}:{isostring.get('S', 0):02d}")
     duration = ''.join(duration)
     return duration
 
