@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     # print(reg.commands['buttcoin'].run(({'sender': 'mach5', 'args': ''})))
     # parsed_things = []
-    # msg = {'msg': 'https://www.youtube.com/watch?v=_yncRe05nS0'}
+    # msg = {'msg': 'https://twitter.com/jbenton/status/1541888492443148293'}
     # for parser in reg.parsers:
     #     for line in parser.parse(msg):
     #         parsed_things.append(line)

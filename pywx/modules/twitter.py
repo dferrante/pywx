@@ -1,14 +1,16 @@
 import logging
 from urllib.parse import urlparse
 
-import requests
+import tweepy
 
-from .base import ParserCommand
+from .base import ParserCommand, irc_color
 from .registry import register_parser
 
 
 @register_parser
 class TwitterParser(ParserCommand):
+    multiline = True
+
     def parse(self, msg):
         lines = []
         for word in msg['msg'].split(' '):
@@ -19,17 +21,21 @@ class TwitterParser(ParserCommand):
                     username = path.split('/')[1]
                     twid = path.split('/')[3]
 
-                    data = requests.get("https://api.twitter.com/2/tweets", params={'ids': twid}, headers={'Authorization': f'Bearer {self.config["twitter_token"]}'}).json()
-                    if 'errors' in data:
-                        continue
+                    client = tweepy.Client(self.config["twitter_token"])
+                    data = client.get_tweet(twid, tweet_fields='entities')
+                    tweet = data.data.data
+                    text = tweet['text']
 
-                    tweet = data['data'][0]['text']
+                    for url in tweet.get('entities', {}).get('urls', []):
+                        text = text.replace(url['url'], url['expanded_url'])
+
                     tweetlines = []
-                    for tweetline in tweet.split('\n'):
+                    for tweetline in text.split('\n'):
                         if not tweetline:
                             continue
                         if len(tweetlines) == 0:
-                            tweetlines.append(f'@{username}: {tweetline}')
+                            username = irc_color(f'@{username}', 'aqua')
+                            tweetlines.append(f'{username}: {tweetline}')
                         else:
                             tweetlines.append(f'{tweetline}')
                     lines.extend(tweetlines)
