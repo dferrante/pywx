@@ -12,6 +12,9 @@ class TwitterParser(ParserCommand):
     multiline = True
 
     def parse(self, msg):
+        if not self.config.get("twitter_token"):
+            return []
+
         lines = []
         for word in msg['msg'].split(' '):
             url = urlparse(word)
