@@ -23,7 +23,7 @@ class Buttcoin(base.Command):
 
     def parse_args(self, msg):
         parser = base.IRCArgumentParser()
-        parser.add_argument('symbol', type=str, default='BTCUSDT', nargs=1)
+        parser.add_argument('symbol', type=str, default='BTCUSDT', nargs='?')
         return parser.parse_args(msg)
 
     def context(self, msg):
