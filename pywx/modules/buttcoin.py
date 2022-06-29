@@ -34,7 +34,7 @@ class Buttcoin(base.Command):
         if 'code' in market:
             return ''
 
-        market['symbol'] = args.symbol[0]
+        market['symbol'] = args.symbol
         market['close'] = round(float(market['lastPrice']), 2)
         if float(market['lastPrice']) > 0:
             market['inverse'] = round(1.0 / float(market['lastPrice']), 5)
