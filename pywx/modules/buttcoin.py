@@ -29,9 +29,8 @@ class Buttcoin(base.Command):
     def context(self, msg):
         args = self.parse_args(msg)
 
-        resp = requests.get(self.buttcoin_api, params={'symbol': args.symbol[0]})
+        resp = requests.get(self.buttcoin_api, params={'symbol': args.symbol})
         market = resp.json()
-
         if 'code' in market:
             return ''
 
