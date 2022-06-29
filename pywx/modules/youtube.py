@@ -1,39 +1,42 @@
+from urllib.parse import parse_qs, urlparse
+
 from apiclient.discovery import build
-from apiclient.errors import HttpError
-from oauth2client.tools import argparser
-from urllib.parse import urlparse, parse_qs
+
 from .base import ParserCommand
 from .registry import register_parser
 
 
 def pretty_iso_duration(iso_duration):
-    dd = {}
+    isostring = {}
     num = 0
     timesplit = False
     duration = []
     iso_tags = (('Y', 'year'), ('M', 'month'), ('W', 'week'), ('D', 'day'))
 
-    for s in iso_duration:
-        if s.isdigit():
-            num = num*10 + int(s)
+    for char in iso_duration:
+        if char.isdigit():
+            num = num * 10 + int(char)
             continue
-        if s == 'P':
+        if char == 'P':
             continue
-        if s == 'T':
+        if char == 'T':
             timesplit = True
             continue
-        if timesplit and s == 'M':
-            s = 'MM'
-        dd[s] = num
+        if timesplit and char == 'M':
+            char = 'MM'
+        isostring[char] = num
         num = 0
 
     for tag, name in iso_tags:
-        if tag in dd and dd[tag]:
-            duration.append('%s %s%s ' % (dd[tag], name, 's' if dd[tag] > 1 else ''))
-    if 'H' in dd: duration.append('%s:' % dd['H'])
-    duration.append('%02d:%02d' % (dd.get('MM', 0), dd.get('S', 0)))
+        if tag in isostring and isostring[tag]:
+            duration.append(f'{isostring[tag]} {name}{"s" if isostring[tag] > 1 else ""} ')
+    if 'H' in isostring:
+        duration.append(f'{isostring["H"]}:')
+
+    duration.append(f"{isostring.get('MM', 0):2d}:{isostring.get('S', 0):2d}")
     duration = ''.join(duration)
     return duration
+
 
 @register_parser
 class YoutubeParser(ParserCommand):
@@ -44,15 +47,15 @@ class YoutubeParser(ParserCommand):
             try:
                 url = urlparse(word)
                 if 'youtube' in url.netloc:
-                    qs = parse_qs(url.query)
-                    vid = qs.get('v')[0] if 'v' in qs else None
+                    params = parse_qs(url.query)
+                    vid = params.get('v')[0] if 'v' in params else None
                     if not vid:
                         split = url.path.split('/')
                         if split[1] == 'v':
                             vid = split[2]
                 if 'youtu.be' == url.netloc:
                     vid = url.path.strip('/')
-            except:
+            except Exception: # pylint: disable=broad-except
                 continue
 
             if not vid:
@@ -68,6 +71,5 @@ class YoutubeParser(ParserCommand):
 
             title = video["snippet"]["title"]
             duration = pretty_iso_duration(video['contentDetails']['duration'])
-            lines.append("YOUTUBE: %s [%s]" % (title, duration))
+            lines.append(f"YOUTUBE: {title} [{duration}]")
         return lines
-

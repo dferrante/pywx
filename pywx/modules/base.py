@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*- #
-import functools
-import datetime
-import re
-import logging
 import argparse
+import datetime
+import logging
+import re
+
 from jinja2 import Environment
 
-max_msg_len = 375 #USE CONFIG VALUE
+MAX_MSG_LEN = 375 #USE CONFIG VALUE
 
 cmap = {
     'black': '\x0301',
@@ -37,21 +37,24 @@ def irc_color(value, color, nulled=True, bold=False):
     color_code = cmap.get(color, '')
     nulled = cmap['null'] if nulled else ''
     bold = cmap['bold'] if bold else ''
-    return u"{bold}{color_code}{value}{nulled}{bold}".format(**locals())
+    return f"{bold}{color_code}{value}{nulled}{bold}"
 
 
 class ArgumentError(Exception):
     pass
+
 
 class NoMessage(Exception):
     pass
 
 
 class IRCArgumentParser(argparse.ArgumentParser):
-    def parse_args(self, msg):
-        self.msg = msg
+    msg = None
+
+    def parse_args(self, args=None, namespace=None):
+        self.msg = args
         args = self.msg['args'].split()
-        return super(IRCArgumentParser, self).parse_args(args)
+        return super().parse_args(args, namespace)
 
     def error(self, message):
         raise ArgumentError(message)
@@ -68,6 +71,7 @@ class ParserCommand(object):
 class Command(object):
     permission = "all"
     private_only = False
+    template = None
 
     def __init__(self, config):
         self.config = config
@@ -78,6 +82,9 @@ class Command(object):
         self.environment.filters['c'] = irc_color
         self.environment.filters['tc'] = lambda v: irc_color(v, 'royal')
         self.environment.filters['nc'] = lambda v: irc_color(v, 'orange')
+
+    def context(self, msg): # pylint: disable=unused-argument
+        return {}
 
     def parse_args(self, msg):
         return msg
@@ -90,8 +97,8 @@ class Command(object):
         except NoMessage:
             return []
         except ArgumentError as exc:
-            return [exc.message]
-        except Exception as exc:
+            return [str(exc)]
+        except Exception as exc: # pylint: disable=broad-except
             logging.exception(exc)
             return []
 
@@ -99,10 +106,10 @@ class Command(object):
             return []
 
         #clean up formatting
-        reply = re.sub('\n', '', reply)
-        reply = re.sub('\s+', ' ', reply)
-        reply = re.sub('^\s', '', reply)
-        reply = re.sub('\s$', '', reply)
+        reply = re.sub(r'\n', '', reply)
+        reply = re.sub(r'\s+', ' ', reply)
+        reply = re.sub(r'^\s', '', reply)
+        reply = re.sub(r'\s$', '', reply)
         if datetime.date.today().month == 10 and datetime.date.today().day == 22:
             #CAPS LOCK DAY
             reply = reply.upper()
@@ -111,9 +118,8 @@ class Command(object):
         line = []
         for word in reply.split(' '):
             line.append(word)
-            if sum(map(len, line)) > self.config.get('max_msg_length', 1000):
+            if sum(map(len, line)) > self.config.get('MAX_MSG_LENgth', 1000):
                 lines.append(' '.join(line[:-1]))
                 line = [word]
         lines.append(' '.join(line))
         return lines
-

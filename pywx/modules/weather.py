@@ -1,39 +1,70 @@
 # -*- coding: utf-8 -*- #
-import forecastio
 import collections
-import time
-import pytz
-import dataset
-import datetime
 import csv
-import urllib
-import requests
-import re
+import datetime
 import os
-from . import base
+import re
+import time
+
+import dataset
+import forecastio
+import pytz
+import requests
 from geopy.geocoders import GoogleV3
 from jinja2 import pass_context
+
+from . import base
 from .registry import register
 
 
-epoch_tz_dt = lambda ts, tz='UTC': datetime.datetime.fromtimestamp(ts, tz=pytz.utc).astimezone(pytz.timezone(tz))
-first_greater_selector = lambda i, l: [r for c, r in l if c >= i][0]
-hms = lambda s: ''.join(['%s%s' % (n,l) for n,l in filter(lambda x: bool(x[0]), [(s/60/60, 'h'), (s/60%60, 'm'), (s%60%60, 's')])])
-to_celcius = lambda f: (f-32)*5.0/9.0
-to_fahrenheight = lambda c: (c*9.0/5.0)+32
-wind_chill = lambda t, ws: int(35.74 + (0.6215*t) - 35.75*(ws**0.16) + 0.4275*t*(ws**0.16))
-wind_chill_si = lambda t, ws: int(13.12 + (0.6215*t) - 11.37*(ws**0.16) + 0.3965*t*(ws**0.16))
 wind_directions = [(11.25, 'N'),(33.75, 'NNE'),(56.25, 'NE'),(78.75, 'ENE'),(101.25, 'E'),(123.75, 'ESE'),
                    (146.25, 'SE'),(168.75, 'SSE'),(191.25, 'S'),(213.75, 'SSW'),(236.25, 'SW'),(258.75, 'WSW'),
                    (281.25, 'W'),(303.75, 'WNW'),(326.25, 'NW'),(348.75, 'NNW'),(360, 'N')]
-hic = [0,-42.379,2.04901523,10.14333127,-0.22475541,-6.83783*(10.0**-3.0),-5.481717*(10.0**-2.0),1.22874*(10.0**-3.0),8.5282*(10.0**-4.0),-1.99*(10.0**-6.0)]
-heat_index = lambda t,r: round(hic[1]+(hic[2]*t)+(hic[3]*r)+(hic[4]*t*r)+(hic[5]*(t**2))+(hic[6]*(r**2))+(hic[7]*(t**2)*r)+(hic[8]*t*(r**2))+(hic[9]*(t**2)*(r**2)), 1)
-heat_index_si = lambda t,r: round(to_celcius(heat_index(to_fahrenheight(t), r)), 1)
+hic = [0,-42.379,2.04901523,10.14333127,-0.22475541,-6.83783 * (10.0**-3.0),-5.481717 * (10.0**-2.0),1.22874 * (10.0**-3.0),8.5282 * (10.0**-4.0),-1.99 * (10.0**-6.0)]
 moon_phases = [
     (0.0625, 'New'),(0.1875, 'Waxing Crescent'),(0.3125, 'First Quarter'),(0.4375, 'Waxing Gibbous'),(0.5625, 'Full'),
     (0.6875, 'Waning Gibbous'),(0.8125, 'Last Quarter'),(0.9375, 'Waning Crescent'),(1, 'New'),
 ]
-meters_to_feet = lambda m: int(m)*3.28084
+
+
+def epoch_tz_dt(timestamp, timezone='UTC'):
+    return datetime.datetime.fromtimestamp(timestamp, tz=pytz.utc).astimezone(pytz.timezone(timezone))
+
+
+def first_greater_selector(i, lst):
+    return [r for c, r in lst if c >= i][0]
+
+
+def hms(secs):
+    return ''.join([f'{n}{l}' for n,l in filter(lambda x: bool(x[0]), [(secs / 60 / 60, 'h'), (secs / 60 % 60, 'm'), (secs % 60 % 60, 's')])])
+
+
+def to_celcius(ftemp):
+    return (ftemp - 32) * 5.0 / 9.0
+
+
+def to_fahrenheight(ctemp):
+    return (ctemp * 9.0 / 5.0) + 32
+
+
+def wind_chill(temp, wind):
+    return int(35.74 + (0.6215 * temp) - 35.75 * (wind**0.16) + 0.4275 * temp * (wind**0.16))
+
+
+def wind_chill_si(temp, wind):
+    return int(13.12 + (0.6215 * temp) - 11.37 * (wind**0.16) + 0.3965 * temp * (wind**0.16))
+
+
+def heat_index(temp, hum):
+    return round(hic[1] + (hic[2] * temp) + (hic[3] * hum) + (hic[4] * temp * hum) + (hic[5] * (temp**2)) + (hic[6] * (hum**2)) + (hic[7] * (temp**2) * hum) + (hic[8] * temp * (hum**2)) + (hic[9] * (temp**2) * (hum**2)), 1)
+
+
+def heat_index_si(temp,hum):
+    return round(to_celcius(heat_index(to_fahrenheight(temp), hum)), 1)
+
+
+def meters_to_feet(meters):
+    return int(meters) * 3.28084
 
 
 icon_colors = {
@@ -51,8 +82,6 @@ icon_colors = {
     'thunderstorm': 'red',
     'tornado': 'red'
 }
-
-alert_color = lambda a: ([c for m,c in alert_colors if m in a['title'].lower()] or ['orange'])[0]
 alert_colors = (
     ('tornado', 'red'),
     ('thunder', 'yellow'),
@@ -69,11 +98,14 @@ alert_colors = (
 )
 temp_colors = ((-100, 'pink'), (15, 'pink'), (32, 'royal'), (50, 'green'), (65, 'lime'), (75, 'yellow'), (85, 'orange'), (150, 'red'))
 dewpoint_colors = ((-100, 'royal'), (15, 'green'), (60, 'lime'), (65, 'yellow'), (70, 'orange'), (75, 'red'), (150, 'red'))
+spark_graph = list("▁▂▃▅▇")
 
-spark_graph = list(u"▁▂▃▅▇")
+
+def alert_color(alert):
+    return ([c for m,c in alert_colors if m in alert['title'].lower()] or ['orange'])[0]
+
 
 Airport = collections.namedtuple('Airport', 'airport_id name city country faa icao lat long alt tz dst')
-
 
 
 class LocationNotFound(Exception):
@@ -82,48 +114,53 @@ class LocationNotFound(Exception):
 
 @pass_context
 def pretty_temp(ctx, temp):
-    return u"%s°%s" % (int(temp), ctx['units'].temp)
+    return f"{int(temp)}°{ctx['units'].temp}"
+
 
 @pass_context
 def color_temp(ctx, temp):
-    ct = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
-    color = first_greater_selector(ct, temp_colors)
-    bold = True if ct > 100 else False
+    colored_temp = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
+    color = first_greater_selector(colored_temp, temp_colors)
+    bold = True if colored_temp > 100 else False
     return base.irc_color(pretty_temp(ctx, temp), color, bold=bold)
+
 
 @pass_context
 def color_dewpoint(ctx, temp):
-    ct = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
-    color = first_greater_selector(ct, dewpoint_colors)
-    bold = True if ct > 75 else False
+    colored_temp = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
+    color = first_greater_selector(colored_temp, dewpoint_colors)
+    bold = True if colored_temp > 75 else False
     return base.irc_color(pretty_temp(ctx, temp), color, bold=bold)
+
 
 @pass_context
 def spark_temp(ctx, temps):
-    graph_line_selector = list(zip([min(temps)+((max(temps)-min(temps))/5.0*x) for x in range(5)], spark_graph)) + [(max(temps)+1, spark_graph[-1])]
+    graph_line_selector = list(zip([min(temps) + ((max(temps) - min(temps)) / 5.0 * x) for x in range(5)], spark_graph)) + [(max(temps) + 1, spark_graph[-1])]
     graph = []
 
     for temp in temps:
-        ct = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
-        color = first_greater_selector(ct, temp_colors)
-        bar = first_greater_selector(temp, graph_line_selector)
-        graph.append(base.irc_color(bar, color))
+        colored_temp = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
+        color = first_greater_selector(colored_temp, temp_colors)
+        barsize = first_greater_selector(temp, graph_line_selector)
+        graph.append(base.irc_color(barsize, color))
     return ''.join(graph)
+
 
 @pass_context
 def spark_dewpoint(ctx, temps):
-    graph_line_selector = list(zip([min(temps)+((max(temps)-min(temps))/5.0*x) for x in range(5)], spark_graph)) + [(max(temps)+1, spark_graph[-1])]
+    graph_line_selector = list(zip([min(temps) + ((max(temps) - min(temps)) / 5.0 * x) for x in range(5)], spark_graph)) + [(max(temps) + 1, spark_graph[-1])]
     graph = []
 
     for temp in temps:
-        ct = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
-        color = first_greater_selector(ct, dewpoint_colors)
-        bar = first_greater_selector(temp, graph_line_selector)
-        graph.append(base.irc_color(bar, color))
+        colored_temp = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
+        color = first_greater_selector(colored_temp, dewpoint_colors)
+        barsize = first_greater_selector(temp, graph_line_selector)
+        graph.append(base.irc_color(barsize, color))
     return ''.join(graph)
 
+
 @pass_context
-def spark_precip(ctx, precips):
+def spark_precip(_, precips):
     graph_line_selector = list(zip([0,0.1,0.3,0.6,0.8,1], spark_graph)) + [(1, spark_graph[-1])]
     graph = []
 
@@ -131,17 +168,17 @@ def spark_precip(ctx, precips):
         color = 'green' if precip[1] == 'rain' else 'purple' if precip[1] == 'snow' else 'aqua' if precip[1] == 'sleet' else 'white'
         if precip[0] < 0.1:
             color = 'white'
-        bar = first_greater_selector(precip[0], graph_line_selector)
-        graph.append(base.irc_color(bar, color))
+        barsize = first_greater_selector(precip[0], graph_line_selector)
+        graph.append(base.irc_color(barsize, color))
     return ''.join(graph)
 
 
 class BaseWeather(base.Command):
     def __init__(self, config):
         super(BaseWeather, self).__init__(config)
-        db = dataset.connect(config['database'])
+        database = dataset.connect(config['database'])
         self.airport_lookup = self.load_airports()
-        self.usertable = db['users']
+        self.usertable = database['users']
         self.geoloc = GoogleV3(api_key=config['youtube_key'])
 
     def load_filters(self):
@@ -168,9 +205,9 @@ class BaseWeather(base.Command):
         airport_lookup = {}
         adb = self.config.get('pywx_path') + '/airports.dat'
         if adb and os.path.exists(adb):
-            for ap in csv.reader(open(adb)):
-                ap = map(lambda x: '' if x == '\\N' else x, ap)
-                apo = Airport(*ap)
+            for airport in csv.reader(open(adb, encoding='utf-8')):
+                airport = map(lambda x: '' if x == '\\N' else x, airport)
+                apo = Airport(*airport)
                 if apo.faa and apo.faa != '\\N':
                     airport_lookup[apo.faa.lower()] = apo
                 if apo.icao and apo.icao != '\\N':
@@ -216,13 +253,13 @@ class BaseWeather(base.Command):
         airport = self.airport_lookup.get(location.lower())
         if not match and airport:
             match = True
-            code = "(%s)" % ('/'.join(filter(lambda x: bool(x), [airport.faa, airport.icao])))
+            code = f"({'/'.join(filter(None, [airport.faa, airport.icao]))})"
             if airport.name == airport.city:
-                name = "%s, %s %s" % (airport.city, airport.country, code)
+                name = f"{airport.city}, {airport.country} {code}"
             elif airport.city in airport.name:
-                name = "%s, %s %s" % (airport.name, airport.country, code)
+                name = f"{airport.name}, {airport.country} {code}"
             else:
-                name = "%s, %s, %s %s" % (airport.name, airport.city, airport.country, code)
+                name = f"{airport.name}, {airport.city}, {airport.country} {code}"
             lat = airport.lat
             lng = airport.long
 
@@ -232,8 +269,8 @@ class BaseWeather(base.Command):
                 name = loc.address
                 lat = loc.latitude
                 lng = loc.longitude
-            except Exception:
-                raise base.ArgumentError('Location not found')
+            except Exception as exc:
+                raise base.ArgumentError('Location not found') from exc
         self.usertable.upsert(dict(user=username, place=name, latitude=lat, longitude=lng), ['user'])
         return name, lat, lng
 
@@ -259,7 +296,7 @@ class BaseWeather(base.Command):
 
 @register(commands=['wf',])
 class WeatherForecast(BaseWeather):
-    template = u"""
+    template = """
         {{ name|nc }}:
         {% for day in dailies %}
             {{ day.time.strftime('%a')|c('maroon') }}:
@@ -270,18 +307,18 @@ class WeatherForecast(BaseWeather):
     def context(self, msg):
         payload = super(WeatherForecast, self).context(msg)
         forecast = payload['forecast']
-        units = payload['units']
+        # units = payload['units']
         timezone = pytz.timezone(forecast.json['timezone'])
 
         daily = forecast.daily().data[:5]
         dailies = []
-        for d in daily:
+        for day_forecast in daily:
             day = {
-               'time': pytz.utc.localize(d.time).astimezone(timezone),
-               'icon': d.icon,
-               'summary': d.summary,
-               'temperatureMin': d.temperatureMin,
-               'temperatureMax': d.temperatureMax,
+                'time': pytz.utc.localize(day_forecast.time).astimezone(timezone),
+                'icon': day_forecast.icon,
+                'summary': day_forecast.summary,
+                'temperatureMin': day_forecast.temperatureMin,
+                'temperatureMax': day_forecast.temperatureMax,
             }
             dailies.append(day)
         payload['dailies'] = dailies
@@ -290,7 +327,8 @@ class WeatherForecast(BaseWeather):
 
 @register(commands=['hf',])
 class HourlyForecast(BaseWeather):
-    temp_template = u"""
+    template = ""
+    temp_template = """
         {{ name|nc }}:
         {% for hour in hourlies %}
             {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
@@ -298,7 +336,7 @@ class HourlyForecast(BaseWeather):
             {{ hour.temperature|ctemp }}
         {% endfor %}"""
 
-    wind_template = u"""
+    wind_template = """
         {{ name|nc }} {{ 'Winds'|nc }}:
         {% for hour in hourlies %}
             {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
@@ -306,14 +344,14 @@ class HourlyForecast(BaseWeather):
             {% if hour.windgust %} {{ 'G'|c('red') }}: {{ hour.windgust }} {% endif %}
         {% endfor %}"""
 
-    dewpoint_template = u"""
+    dewpoint_template = """
         {{ name|nc }} {{ 'Dewpoints'|nc }}:
         {% for hour in hourlies %}
             {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
             {{ hour.dewpoint|dptemp }}
         {% endfor %}"""
 
-    precip_template = u"""
+    precip_template = """
         {{ name|nc }} {{ 'Precip'|nc }}:
         {% for hour in hourlies %}
             {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
@@ -343,35 +381,35 @@ class HourlyForecast(BaseWeather):
 
         hourly = forecast.hourly().data[:12]
         hourlies = []
-        for h in hourly:
+        for hour_d in hourly:
             hour = {
-               'time': pytz.utc.localize(h.time).astimezone(timezone),
-               'icon': h.icon,
-               'summary': h.summary,
-               'temperature': h.temperature,
-               'dewpoint': h.dewPoint,
+                'time': pytz.utc.localize(hour_d.time).astimezone(timezone),
+                'icon': hour_d.icon,
+                'summary': hour_d.summary,
+                'temperature': hour_d.temperature,
+                'dewpoint': hour_d.dewPoint,
             }
 
-            if h.precipProbability > 0:
-                hour['precip_prob'] = int(h.precipProbability*100)
-                hour['precip_type'] = h.precipType.title()
+            if hour_d.precipProbability > 0:
+                hour['precip_prob'] = int(hour_d.precipProbability * 100)
+                hour['precip_type'] = hour_d.precipType.title()
             else:
                 hour['precip_prob'] = 0
                 hour['precip_type'] = False
 
-            windspeed = h.windSpeed if forecast.json['flags']['units'] != 'si' else h.windSpeed*3.6 #convert m/s to kph
-            hour['windspeed'] = '%s%s %s' % (int(windspeed), units.wind, first_greater_selector(h.windBearing, wind_directions))
-            if h.windGust > 20 and units.wind == 'mph':
-                hour['windgust'] = int(round(h.windGust))
-            elif h.windGust > 32 and units.wind == 'kph':
-                hour['windgust'] = int(round(h.windGust))
-            elif h.windGust > 8 and units.wind == 'm/s':
-                hour['windgust'] = round(h.windGust, 1)
+            windspeed = hour_d.windSpeed if forecast.json['flags']['units'] != 'si' else hour_d.windSpeed * 3.6 #convert m/s to kph
+            hour['windspeed'] = f'{int(windspeed)}{units.wind} {first_greater_selector(hour_d.windBearing, wind_directions)}'
+            if hour_d.windGust > 20 and units.wind == 'mph':
+                hour['windgust'] = int(round(hour_d.windGust))
+            elif hour_d.windGust > 32 and units.wind == 'kph':
+                hour['windgust'] = int(round(hour_d.windGust))
+            elif hour_d.windGust > 8 and units.wind == 'm/s':
+                hour['windgust'] = round(hour_d.windGust, 1)
             else:
                 hour['windgust'] = None
 
             if hour['windgust']:
-                hour['windgust'] = "{}{}".format(hour['windgust'], units.wind)
+                hour['windgust'] = f"{hour['windgust']}{units.wind}"
             hourlies.append(hour)
 
         payload['hourlies'] = hourlies
@@ -380,7 +418,7 @@ class HourlyForecast(BaseWeather):
 
 @register(commands=['hfx',])
 class HourlySparkForecast(BaseWeather):
-    template = u"""
+    template = """
         {{ name|nc }}:
         {{ "Temp"|c('maroon') }}: {{ temps|spark_temp }}
         {{ "Dewpoint"|c('maroon') }}: {{ dewpoints|spark_dewpoint }}
@@ -403,24 +441,24 @@ class HourlySparkForecast(BaseWeather):
 
         hourly = forecast.hourly().data[:12]
         hourlies = []
-        for h in hourly:
+        for hour_d in hourly:
             hour = {
-               'time': pytz.utc.localize(h.time).astimezone(timezone),
-               'icon': h.icon,
-               'summary': h.summary,
-               'temperature': h.temperature,
-               'dewpoint': h.dewPoint,
+                'time': pytz.utc.localize(hour_d.time).astimezone(timezone),
+                'icon': hour_d.icon,
+                'summary': hour_d.summary,
+                'temperature': hour_d.temperature,
+                'dewpoint': hour_d.dewPoint,
             }
 
-            if h.precipProbability > 0:
-                hour['precip_prob'] = h.precipProbability
-                hour['precip_type'] = h.precipType
+            if hour_d.precipProbability > 0:
+                hour['precip_prob'] = hour_d.precipProbability
+                hour['precip_type'] = hour_d.precipType
             else:
                 hour['precip_prob'] = 0
                 hour['precip_type'] = False
 
-            windspeed = h.windSpeed if forecast.json['flags']['units'] != 'si' else h.windSpeed*3.6 #convert m/s to kph
-            hour['windspeed'] = '%s%s %s' % (int(windspeed), units.wind, first_greater_selector(h.windBearing, wind_directions))
+            windspeed = hour_d.windSpeed if forecast.json['flags']['units'] != 'si' else hour_d.windSpeed * 3.6 #convert m/s to kph
+            hour['windspeed'] = f'{int(windspeed)}{units.wind} {first_greater_selector(hour_d.windBearing, wind_directions)}'
             hourlies.append(hour)
 
         payload['temps'] = [x['temperature'] for x in hourlies]
@@ -431,7 +469,7 @@ class HourlySparkForecast(BaseWeather):
 
 @register(commands=['wx',])
 class CurrentWeather(BaseWeather):
-    template = u"""
+    template = """
     {{ name|nc }}: {{ current.summary|ic(current.icon) }} {{ current.temperature|ctemp }}
     {% if wind_chill %} {{ 'Wind Chill'|c('navy') }}: {{ wind_chill|ctemp }} {% endif %}
     {% if heat_index %} {{ 'Heat Index'|c('red') }}: {{ heat_index|ctemp }} {% endif %}
@@ -445,7 +483,8 @@ class CurrentWeather(BaseWeather):
     {% if alerts %}{{ 'Alerts'|tc }}: {% for alert, acolor in alerts %}#{{ loop.index }}: {{ alert.title|c(acolor) }} {% endfor %}{% endif %}"""
 
     def context(self, msg):
-        payload = super(CurrentWeather, self).context(msg)
+        # pylint: disable=no-member
+        payload = super().context(msg)
         forecast = payload['forecast']
         units = payload['units']
         timezone = forecast.json['timezone']
@@ -458,12 +497,12 @@ class CurrentWeather(BaseWeather):
             payload['wind_chill'] = wind_chill_si(current.temperature, current.windSpeed)
 
         if current.temperature > 80 and current.humidity > .4 and units.temp == "F":
-            payload['heat_index'] = heat_index(current.temperature, current.humidity*100)
+            payload['heat_index'] = heat_index(current.temperature, current.humidity * 100)
         elif current.temperature > 26.6 and current.humidity > .4 and units.temp == "C":
-            payload['heat_index'] = heat_index_si(current.temperature, current.humidity*100)
+            payload['heat_index'] = heat_index_si(current.temperature, current.humidity * 100)
 
-        windspeed = current.windSpeed if forecast.json['flags']['units'] != 'si' else current.windSpeed*3.6 #convert m/s to kph
-        payload['windspeed'] = '%s%s %s' % (int(windspeed), units.wind, first_greater_selector(current.windBearing, wind_directions))
+        windspeed = current.windSpeed if forecast.json['flags']['units'] != 'si' else current.windSpeed * 3.6 #convert m/s to kph
+        payload['windspeed'] = f'{int(windspeed)}{units.wind} {first_greater_selector(current.windBearing, wind_directions)}'
         if current.windGust > 20 and units.wind == 'mph':
             payload['windgust'] = int(round(current.windGust))
         elif current.windGust > 32 and units.wind == 'kph':
@@ -474,10 +513,10 @@ class CurrentWeather(BaseWeather):
             payload['windgust'] = None
 
         if payload['windgust']:
-            payload['windgust'] = "{}{}".format(payload['windgust'], units.wind)
+            payload['windgust'] = f"{payload['windgust']}{units.wind}"
 
-        payload['humidity'] = int(current.humidity*100)
-        payload['clouds'] = int(current.cloudCover*100)
+        payload['humidity'] = int(current.humidity * 100)
+        payload['clouds'] = int(current.cloudCover * 100)
 
         sunrisets = forecast.json['daily']['data'][0].get('sunriseTime')
         sunsetts = forecast.json['daily']['data'][0].get('sunsetTime')
@@ -501,7 +540,7 @@ class CurrentWeather(BaseWeather):
 
 @register(commands=['wxtime', 'sun', 'moon'])
 class LocalTime(BaseWeather):
-    template = u"""
+    template = """
         {{ name|nc }}: {{ currtime }} ({{ utctime }})
         {{ 'Sun'|tc }}: {% if sunrise %}☀ {{ sunrise }}{% endif %} ☽ {{ sunset }} {{ daylength }}
         {{ 'Moon'|tc }}: {{ moon }}"""
@@ -529,15 +568,15 @@ class LocalTime(BaseWeather):
                 payload['daylength'] = '24hr Dark'
 
         now = time.time()
-        payload['currtime'] = epoch_tz_dt(now, timezone).strftime("%%Y-%%m-%%d %s %%Z (%%z)" % units.time_fmt)
-        payload['utctime'] = epoch_tz_dt(now).strftime("%s %%Z" % units.time_fmt)
+        payload['currtime'] = epoch_tz_dt(now, timezone).strftime(f"%Y-%m-%d {units.time_fmt} %Z (%z)")
+        payload['utctime'] = epoch_tz_dt(now).strftime(f"{units.time_fmt} %Z")
         payload['moon'] = first_greater_selector(forecast.json['daily']['data'][0]['moonPhase'], moon_phases)
         return payload
 
 
 @register(commands=['alerts',])
 class Alerts(BaseWeather):
-    template = u"""
+    template = """
         {% if alerts %}
             {{ 'Alerts'|tc }}:
             {% for alert, acolor in alerts %}#{{ loop.index }}: {{ alert.title|c(acolor) }} {% endfor %}
@@ -561,7 +600,7 @@ class Alert(BaseWeather):
         parser.add_argument('location', type=str, default=None, nargs='*')
         return parser.parse_args(msg)
 
-    def run(self, msg):
+    def run(self, msg=''):
         try:
             payload = super(Alert, self).context(msg)
         except base.ArgumentError:
@@ -573,7 +612,7 @@ class Alert(BaseWeather):
         lines = []
         if 'alerts' in forecast.json:
             try:
-                alert = forecast.json['alerts'][alert_index-1]
+                alert = forecast.json['alerts'][alert_index - 1]
             except IndexError:
                 return []
             lines.append(alert['title'])
@@ -585,21 +624,20 @@ class Alert(BaseWeather):
         return lines
 
 
+# @register(commands=['radar',])
+# class Radar(BaseWeather):
+#     template = "{{ name|nc }}: {{ 'Radar'|tc }}: {{ radarlink }} {{ 'Spark Radar'|tc }}: {{ sparkradarlink }}"
 
-@register(commands=['radar',])
-class Radar(BaseWeather):
-    template = "{{ name|nc }}: {{ 'Radar'|tc }}: {{ radarlink }} {{ 'Spark Radar'|tc }}: {{ sparkradarlink }}"
-
-    def context(self, msg):
-        payload = super(Radar, self).context(msg)
-        timezone = payload['forecast'].json['timezone']
-        payload['radarlink'] = 'http://www.srh.noaa.gov/ridge2/ridgenew2/?%s' % (urllib.urlencode({
-            'rid': 'NAT', 'pid': 'N0Q', 'lat': payload['lat'], 'lon': payload['lng'], 'frames': 10, 'zoom': 8, 'fs': '1'
-        }))
-        payload['sparkradarlink'] = 'http://weatherspark.com/forecasts/sparkRadar?%s' % (urllib.urlencode({
-            'lat': round(payload['lat'], 3), 'lon': round(payload['lng'] ,3), 'timeZone': timezone, 'unit': payload['units'].dist
-        }))
-        return payload
+#     def context(self, msg):
+#         payload = super(Radar, self).context(msg)
+#         timezone = payload['forecast'].json['timezone']
+#         payload['radarlink'] = 'http://www.srh.noaa.gov/ridge2/ridgenew2/?%s' % (urllib.urlencode({
+#             'rid': 'NAT', 'pid': 'N0Q', 'lat': payload['lat'], 'lon': payload['lng'], 'frames': 10, 'zoom': 8, 'fs': '1'
+#         }))
+#         payload['sparkradarlink'] = 'http://weatherspark.com/forecasts/sparkRadar?%s' % (urllib.urlencode({
+#             'lat': round(payload['lat'], 3), 'lon': round(payload['lng'] ,3), 'timeZone': timezone, 'unit': payload['units'].dist
+#         }))
+#         return payload
 
 
 @register(commands=['locate', 'find', 'latlng', 'latlong'])
@@ -616,7 +654,7 @@ class Locate(BaseWeather):
             if json['status'] != 'OK':
                 return None
             return json['results'][0]['elevation']
-        except:
+        except Exception: # pylint: disable=broad-except
             return None
 
     def context(self, msg):
@@ -639,7 +677,7 @@ class Eclipse(BaseWeather):
     def get_eclipse_data(self, latlng):
         params = {
             'mode': 'localeclipsejson',
-            'n': '@%s' % ','.join(map(str, latlng)),
+            'n': f"@{','.join(map(str, latlng))}",
             'iso': '20240408',
             'zoom': 5,
             'mobile': 0
@@ -650,11 +688,11 @@ class Eclipse(BaseWeather):
                 return None
             json = req.json()
             return json
-        except:
+        except Exception: # pylint: disable=broad-except
             return None
 
     def context(self, msg):
-        payload = super(Locate, self).context(msg)
+        payload = super().context(msg)
         eclipse = self.get_eclipse_data((payload['lat'], payload['lng']))
 
         payload['start'] = eclipse['events'][0]['txt'][15:]

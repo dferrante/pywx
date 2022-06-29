@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import pythabot
+import argparse
+import json
 import os
 import sys
-import imp
-import argparse
-from modules import *
+
+from .pythabot import Pythabot
+from .modules import registry
 
 parser = argparse.ArgumentParser()
 parser.add_argument("config_file", help="path to the config file")
@@ -14,11 +15,12 @@ args = parser.parse_args()
 
 
 try:
-    local_config = imp.load_source('local_config', args.config_file)
-    config = local_config.config
+    with open(args.config_file, encoding='utf-8') as config_file:
+        local_config = json.load(config_file)
+    config = local_config['config']
     config['pywx_path'] = os.path.dirname(os.path.abspath(__file__))
 except ImportError:
-    log.error('missing local_config.py')
+    print('cant import local_config.py')
     sys.exit()
 
 if __name__ == '__main__':
@@ -34,6 +36,6 @@ if __name__ == '__main__':
     # for line in parsed_things:
     #     print(line)
 
-    bot = pythabot.Pythabot(config, reg)
+    bot = Pythabot(config, reg)
     bot.connect()
     bot.listen()

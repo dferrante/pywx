@@ -1,10 +1,14 @@
 import datetime
+
 import requests
+
 from . import base
 from .registry import register
 
 
-hms = lambda s: ''.join(['%s%s' % (n,l) for n,l in filter(lambda x: bool(x[0]), [(s/60/60, 'h'), (s/60%60, 'm'), (s%60%60, 's')])])
+def hms(secs):
+    return ''.join([f'{n}{l}' for n,l in filter(lambda x: bool(x[0]), [(secs / 60 / 60, 'h'), (secs / 60 % 60, 'm'), (secs % 60 % 60, 's')])])
+
 
 @register(commands=['buttcoin',])
 class Buttcoin(base.Command):
@@ -35,9 +39,9 @@ class Buttcoin(base.Command):
         if not market:
             return ''
 
-        market['inverse'] = round(1.0/int(market['close']), 5)
+        market['inverse'] = round(1.0 / int(market['close']), 5)
         last_trade = datetime.datetime.fromtimestamp(market['latest_trade'])
         market['last_trade'] = last_trade.strftime("%Y-%m-%d %H:%M:%S EST")
-        market['ago'] = hms((datetime.datetime.now()-last_trade).seconds)
+        market['ago'] = hms((datetime.datetime.now() - last_trade).seconds)
 
         return market

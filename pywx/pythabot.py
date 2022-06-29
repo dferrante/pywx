@@ -1,9 +1,9 @@
-import sys
-import socket
-import string
-import time
 import datetime
 import logging as log
+import socket
+import sys
+import time
+
 log.basicConfig(level=log.INFO, format="%(asctime)-15s %(levelname)s %(message)s")
 
 
@@ -19,18 +19,18 @@ class Pythabot:
     def connect(self):
         try:
             self.sock.connect((self.config["host"],self.config["port"]))
-            log.info("Connected to %s" % self.config["host"])
+            log.info("Connected to %s", self.config["host"])
 
             if len(self.config["pass"]) != 0:
-                self.sendraw("PASS %s" % self.config["pass"])
+                self.sendraw(f'PASS {self.config["pass"]}')
             else:
                 log.info("Account identification bypassed.")
 
-            self.sendraw("NICK %s" % self.config["nick"])
-            self.sendraw("USER %s %s bla :%s" % (self.config["ident"], self.config["host"], self.config["realname"]))
-            log.info("Identified as %s" % self.config["nick"])
+            self.sendraw(f"NICK {self.config['nick']}")
+            self.sendraw(f'USER {self.config["ident"]} {self.config["host"]} bla :{self.config["realname"]}')
+            log.info("Identified as %s", self.config["nick"])
         except socket.error:
-            self.quit("Could not connect to port %s, on %s." % (self.config["port"], self.config["host"]))
+            self.quit(f'Could not connect to port {self.config["port"]}, on {self.config["host"]}.')
 
     def run_periodic_commands(self):
         for task, attrs in self.registry.periodic_tasks.items():
@@ -59,7 +59,7 @@ class Pythabot:
 
         parsedline = {
             "sender": senderline[1:exapoint],
-            "ident": senderline[tildepoint:atpoint-1],
+            "ident": senderline[tildepoint:atpoint - 1],
             "mask": senderline[atpoint:],
             "chan": line[2] if line[2] != self.config['nick'] else senderline[1:exapoint],
             "msg": msg,
@@ -73,12 +73,12 @@ class Pythabot:
         cmd = msg["command"].lower()
         command = self.registry.commands.get(cmd)
         if command:
-            log.info('got command %s %s' % (cmd, msg))
+            log.info('got command %s %s', cmd, msg)
             if command.permission == "all" or (command.permission == "owner" and msg["mask"] == self.config["ownermask"]):
                 reply = command.run(msg)
-                to = msg['chan'] if not command.private_only else msg['sender']
+                send_to = msg['chan'] if not command.private_only else msg['sender']
                 for line in reply:
-                    self.privmsg(to, line)
+                    self.privmsg(send_to, line)
 
         parsed_things = []
         for parser in self.registry.parsers:
@@ -92,14 +92,14 @@ class Pythabot:
             while 1:
                 self.buffer = self.buffer + self.sock.recv(1024).decode('utf-8')
                 log.debug(self.buffer.strip())
-                if (("MOTD" in self.buffer or 'End of message of the day' in self.buffer) and self.debounce == False):
+                if (("MOTD" in self.buffer or 'End of message of the day' in self.buffer) and not self.debounce):
                     if 'nickserv_pass' in self.config:
-                        self.privmsg('NickServ', 'identify %s' % self.config['nickserv_pass'])
+                        self.privmsg('NickServ', f'identify {self.config["nickserv_pass"]}')
                         time.sleep(10)
                     for chan in self.config["chans"]:
-                        self.sendraw("JOIN %s" % chan)
-                        log.info("Joined %s" % chan)
-                    self.debounce == True
+                        self.sendraw(f"JOIN {chan}")
+                        log.info("Joined %s", chan)
+                    self.debounce = True
 
                 temp = self.buffer.split("\n")
                 self.buffer = temp.pop()
@@ -109,11 +109,11 @@ class Pythabot:
                     line = line.split(" ")
 
                     if line[1] == "433":
-                        self.quit("Username '%s' is already in use! Aborting." % self.config["nick"])
+                        self.quit(f"Username {self.config['nick']} is already in use! Aborting.")
 
                     if line[0] == "PING":
-                        self.sendraw("PONG %s" % line[1])
-                        log.debug("PONG %s %s" % (line[1], datetime.datetime.now()))
+                        self.sendraw(f"PONG {line[1]}")
+                        log.debug(f"PONG {line[1]} {datetime.datetime.now()}")
 
                     if line[1] == "PRIVMSG":
                         self.initparse(line)
@@ -128,14 +128,13 @@ class Pythabot:
         msg += "\r\n"
         self.sock.send(msg.encode('utf-8'))
 
-    def privmsg(self, to, msg):
+    def privmsg(self, send_to, msg):
         log.info('PRIVMSG: %s', msg.encode('utf-8'))
-        fullmsg = f'PRIVMSG {to} :{msg}\r\n'.encode('utf-8')
+        fullmsg = f'PRIVMSG {send_to} :{msg}\r\n'.encode('utf-8')
         self.sock.send(fullmsg)
 
     def quit(self, errmsg):
-        log.error("%s" % errmsg)
-        self.sendraw("QUIT :%s" % self.config["quitmsg"])
+        log.error("%s", errmsg)
+        self.sendraw(f"QUIT :{self.config['quitmsg']}")
         self.sock.close()
         sys.exit(1)
-

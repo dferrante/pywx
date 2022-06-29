@@ -1,10 +1,13 @@
 import requests
+
 from . import base
 from .registry import register
 
-
 swx_colors = dict(enumerate(['lime', 'yellow', 'yellow', 'orange', 'red', 'red']))
-scale_format = lambda s,t,st: ('%s%s-%s' % (st, s, t.title()), swx_colors[int(s)]) if t and t != 'none' else ('%s%s' % (st, s), swx_colors[int(s)])
+
+
+def scale_format(scale, text, unit):
+    return (f'{unit}{scale}-{text.title()}', swx_colors[int(scale)]) if text and text != 'none' else (f'{unit}{scale}', swx_colors[int(scale)])
 
 
 class Space(base.Command):
@@ -20,13 +23,13 @@ class Space(base.Command):
         if radio['Scale']:
             parts.append(scale_format(radio['Scale'], radio['Text'], 'R'))
         if radio['MinorProb']:
-            parts.append(('R1-R2: %s%%' % (radio['MinorProb']), 'yellow'))
+            parts.append((f'R1-R2: {radio["MinorProb"]}%', 'yellow'))
         if radio['MajorProb']:
-            parts.append(('R3+: %s%%' % (radio['MajorProb']), 'red'))
+            parts.append((f'R3+: {radio["MajorProb"]}%', 'red'))
         if solar['Scale']:
             parts.append(scale_format(solar['Scale'], solar['Text'], 'S'))
         if solar['Prob']:
-            parts.append(('S1+: %s%%' % (radio['MajorProb']), 'yellow'))
+            parts.append((f'S1+: {radio["MajorProb"]}%', 'yellow'))
         if geomag['Scale']:
             parts.append(scale_format(geomag['Scale'], geomag['Text'], 'G'))
         return parts
@@ -34,7 +37,7 @@ class Space(base.Command):
 
 @register(commands=['swx',])
 class SpaceWeather(Space):
-    template = u"""
+    template = """
         {{ 'Space'|nc }}:
         {{ 'Current'|tc }}: {% for txt, color in current %}{{ txt|c(color) }}{% if not loop.last %}|{% endif %}{% endfor %}
         {{ "Today's Max"|tc }}: {% for txt, color in today %}{{ txt|c(color) }}{% if not loop.last %}|{% endif %}{% endfor %}
@@ -45,19 +48,19 @@ class SpaceWeather(Space):
     def context(self, msg):
         scales = requests.get(self.noaa_scales_api).json()
 
-        sw = {
+        spaceweather = {
             'current': self.swx_scale_parse(scales['0']),
             'today': self.swx_scale_parse(scales['-1']),
             'solar_wind': requests.get(self.solar_wind_speed_api).json(),
             'solar_wind_mag': requests.get(self.solar_mag_api).json(),
             'flux': requests.get(self.solar_flux_api).json(),
         }
-        return sw
+        return spaceweather
 
 
 @register(commands=['swf',])
 class SpaceForecast(Space):
-    template = u"""
+    template = """
         {{ 'Space'|nc }}:
         {{ 'Today'|tc }}: {% for txt, color in today %}{{ txt|c(color) }}{% if not loop.last %}|{% endif %}{% endfor %}
         {{ 'Tomorrow'|tc }}: {% for txt, color in tomorrow %}{{ txt|c(color) }}{% if not loop.last %}|{% endif %}{% endfor %}
@@ -66,9 +69,9 @@ class SpaceForecast(Space):
     def context(self, msg):
         scales = requests.get(self.noaa_scales_api).json()
 
-        sw = {
+        spaceweather = {
             'today': self.swx_scale_parse(scales['1']),
             'tomorrow': self.swx_scale_parse(scales['2']),
             'next_day': self.swx_scale_parse(scales['3']),
         }
-        return sw
+        return spaceweather

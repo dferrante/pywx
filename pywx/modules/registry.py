@@ -1,6 +1,3 @@
-import os
-import sys
-
 class Register(object):
     def __init__(self):
         self.commands = {}
@@ -24,17 +21,20 @@ class Register(object):
 
 registry = Register()
 
-def register(commands=[]):
+
+def register(commands):
     def add_class(cmd):
         registry.command_klasses[cmd] = commands
         return cmd
     return add_class
+
 
 def register_periodic(run_every=60):
     def add_class(cmd):
         registry.periodic_klasses[cmd] = {'run_every': run_every, 'last_run': None}
         return cmd
     return add_class
+
 
 def register_parser(cls):
     registry.parser_klasses.append(cls)
