@@ -36,7 +36,7 @@ def first_greater_selector(i, lst):
 
 
 def hms(secs):
-    return ''.join([f'{n}{l}' for n,l in filter(lambda x: bool(x[0]), [(secs / 60 / 60, 'h'), (secs / 60 % 60, 'm'), (secs % 60 % 60, 's')])])
+    return ''.join([f'{n}{l}' for n,l in filter(lambda x: bool(x[0]), [(int(secs / 60 / 60), 'h'), (int(secs / 60 % 60), 'm'), (int(secs % 60 % 60), 's')])])
 
 
 def to_celcius(ftemp):

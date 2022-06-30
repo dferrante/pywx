@@ -4,10 +4,6 @@ from . import base
 from .registry import register
 
 
-def hms(secs):
-    return ''.join([f'{n}{l}' for n,l in filter(lambda x: bool(x[0]), [(secs / 60 / 60, 'h'), (secs / 60 % 60, 'm'), (secs % 60 % 60, 's')])])
-
-
 @register(commands=['buttcoin',])
 class Buttcoin(base.Command):
     buttcoin_api = 'https://api.binance.com/api/v3/ticker/24hr'

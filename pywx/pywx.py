@@ -25,7 +25,7 @@ if __name__ == '__main__':
     reg = registry.registry
     reg.load_modules(config)
 
-    # print(reg.commands['buttcoin'].run(({'sender': 'mach5', 'args': ''})))
+    print(reg.commands['lastquake'].run({'sender': 'bp', 'msg': 'lastquake', 'command': 'lastquake', 'args': '',}))
     # parsed_things = []
     # msg = {'msg': 'https://twitter.com/jbenton/status/1541888492443148293'}
     # for parser in reg.parsers:
@@ -34,6 +34,6 @@ if __name__ == '__main__':
     # for line in parsed_things:
     #     print(line)
 
-    bot = Pythabot(config, reg)
-    bot.connect()
-    bot.listen()
+    # bot = Pythabot(config, reg)
+    # bot.connect()
+    # bot.listen()
