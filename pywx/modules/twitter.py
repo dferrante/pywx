@@ -37,7 +37,7 @@ class TwitterParser(ParserCommand):
                         if not tweetline:
                             continue
                         if len(tweetlines) == 0:
-                            username = irc_color(f'@{username}', 'aqua')
+                            username = irc_color(f'@{username}', 'orange', reset=True)
                             tweetlines.append(f'{username}: {tweetline}')
                         else:
                             tweetlines.append(f'{tweetline}')

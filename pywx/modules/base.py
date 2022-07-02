@@ -33,11 +33,14 @@ cmap = {
 }
 
 
-def irc_color(value, color, nulled=True, bold=False):
+def irc_color(value, color, nulled=True, bold=False, italics=False, reset=False, underline=False):
     color_code = cmap.get(color, '')
     nulled = cmap['null'] if nulled else ''
     bold = cmap['bold'] if bold else ''
-    return f"{bold}{color_code}{value}{nulled}{bold}"
+    italics = cmap['italic'] if bold else ''
+    reset = cmap['reset'] if bold else ''
+    underline = cmap['underline'] if bold else ''
+    return f"{bold}{italics}{underline}{color_code}{value}{nulled}{reset}{bold}{italics}{underline}"
 
 
 class ArgumentError(Exception):
