@@ -43,7 +43,7 @@ def to_celcius(ftemp):
     return (ftemp - 32) * 5.0 / 9.0
 
 
-def to_fahrenheight(ctemp):
+def to_fahrenheit(ctemp):
     return (ctemp * 9.0 / 5.0) + 32
 
 
@@ -60,7 +60,7 @@ def heat_index(temp, hum):
 
 
 def heat_index_si(temp,hum):
-    return round(to_celcius(heat_index(to_fahrenheight(temp), hum)), 1)
+    return round(to_celcius(heat_index(to_fahrenheit(temp), hum)), 1)
 
 
 def meters_to_feet(meters):
@@ -119,7 +119,7 @@ def pretty_temp(ctx, temp):
 
 @pass_context
 def color_temp(ctx, temp):
-    colored_temp = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
+    colored_temp = int(to_fahrenheit(temp)) if ctx['units'].temp == 'C' else int(temp)
     color = first_greater_selector(colored_temp, temp_colors)
     bold = True if colored_temp > 100 else False
     return base.irc_color(pretty_temp(ctx, temp), color, bold=bold)
@@ -127,7 +127,7 @@ def color_temp(ctx, temp):
 
 @pass_context
 def color_dewpoint(ctx, temp):
-    colored_temp = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
+    colored_temp = int(to_fahrenheit(temp)) if ctx['units'].temp == 'C' else int(temp)
     color = first_greater_selector(colored_temp, dewpoint_colors)
     bold = True if colored_temp > 75 else False
     return base.irc_color(pretty_temp(ctx, temp), color, bold=bold)
@@ -139,7 +139,7 @@ def spark_temp(ctx, temps):
     graph = []
 
     for temp in temps:
-        colored_temp = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
+        colored_temp = int(to_fahrenheit(temp)) if ctx['units'].temp == 'C' else int(temp)
         color = first_greater_selector(colored_temp, temp_colors)
         barsize = first_greater_selector(temp, graph_line_selector)
         graph.append(base.irc_color(barsize, color))
@@ -152,7 +152,7 @@ def spark_dewpoint(ctx, temps):
     graph = []
 
     for temp in temps:
-        colored_temp = int(to_fahrenheight(temp)) if ctx['units'].temp == 'C' else int(temp)
+        colored_temp = int(to_fahrenheit(temp)) if ctx['units'].temp == 'C' else int(temp)
         color = first_greater_selector(colored_temp, dewpoint_colors)
         barsize = first_greater_selector(temp, graph_line_selector)
         graph.append(base.irc_color(barsize, color))
@@ -331,7 +331,7 @@ class HourlyForecast(BaseWeather):
     temp_template = """
         {{ name|nc }}:
         {% for hour in hourlies %}
-            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
+            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('purple') }}:
             {{ hour.summary|ic(hour.icon) }}
             {{ hour.temperature|ctemp }}
         {% endfor %}"""
@@ -339,7 +339,7 @@ class HourlyForecast(BaseWeather):
     wind_template = """
         {{ name|nc }} {{ 'Winds'|nc }}:
         {% for hour in hourlies %}
-            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
+            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('purple') }}:
             {{ hour.windspeed }}
             {% if hour.windgust %} {{ 'G'|c('red') }}: {{ hour.windgust }} {% endif %}
         {% endfor %}"""
@@ -347,15 +347,47 @@ class HourlyForecast(BaseWeather):
     dewpoint_template = """
         {{ name|nc }} {{ 'Dewpoints'|nc }}:
         {% for hour in hourlies %}
-            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
-            {{ hour.dewpoint|dptemp }}
+            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('purple') }}:
+            {{ hour.dewpoint|dptemp }} 
+            {{ ''|c('reset') }}
         {% endfor %}"""
 
     precip_template = """
         {{ name|nc }} {{ 'Precip'|nc }}:
         {% for hour in hourlies %}
-            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('maroon') }}:
+            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('purple') }}:
             {% if hour.precip_type %} {{ hour.precip_type|ic(hour.icon) }} ({{ hour.precip_prob }}%) {% else %} - {% endif %}
+        {% endfor %}"""
+    
+    onlytemp_template = """
+        {{ name|nc }} {{ 'Temps'|nc }}:
+        {% for hour in hourlies %}
+            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('purple') }}:
+            {{ hour.temperature|ctemp }}
+        {% endfor %}"""
+
+    dandt_template = """
+        {{ name|nc }} {{ 'Temps & Dews'|nc }}:
+        {% for hour in hourlies %}
+            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('aqua') }}:
+            {{ hour.temperature|ctemp }}
+            {{ '/'|c('teal') }}
+            {{ hour.dewpoint|dptemp }}
+            {{ ''|c('reset') }}
+        {% endfor %}"""
+    
+    humidity_template = """
+        {{ name|nc }} {{ 'Humidity'|nc }}:
+        {% for hour in hourlies %}
+            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('purple') }}:
+            {{ hour.humidity }}
+        {% endfor %}"""
+
+    apparenttemp_template = """
+        {{ name|nc }} {{ 'Apparent Temp'|nc }}:
+        {% for hour in hourlies %}
+            {{ (hour.time.strftime('%I')|int|string + hour.time.strftime('%p').lower())|c('purple') }}:
+            {{ hour.apparentTemperature|ctemp }}
         {% endfor %}"""
 
     def parse_args(self, msg):
@@ -366,6 +398,10 @@ class HourlyForecast(BaseWeather):
         group.add_argument('-d', action="store_true")
         group.add_argument('-w', action="store_true")
         group.add_argument('-p', action="store_true")
+        group.add_argument('-t', action="store_true")
+        group.add_argument('-z', action="store_true")
+        group.add_argument('-u', action="store_true")
+        group.add_argument('-a', action="store_true")
         parser.add_argument('location', type=str, default=None, nargs='*')
         return parser.parse_args(msg)
 
@@ -377,7 +413,11 @@ class HourlyForecast(BaseWeather):
 
         self.template = self.precip_template if payload['args'].p else self.temp_template
         self.template = self.dewpoint_template if payload['args'].d else self.template
-        self.template = self.wind_template if payload['args'].w else self.template
+        self.template = self.wind_template if payload['args'].w else self.template        
+        self.template = self.onlytemp_template if payload['args'].t else self.template
+        self.template = self.dandt_template if payload['args'].z else self.template
+        self.template = self.humidity_template if payload['args'].u else self.template
+        self.template = self.apparenttemp_template if payload['args'].a else self.template
 
         hourly = forecast.hourly().data[:12]
         hourlies = []
@@ -388,6 +428,8 @@ class HourlyForecast(BaseWeather):
                 'summary': hour_d.summary,
                 'temperature': hour_d.temperature,
                 'dewpoint': hour_d.dewPoint,
+                'humidity': hour_d.humidity,
+                'apparentTemperature': hour_d.apparentTemperature,
             }
 
             if hour_d.precipProbability > 0:
@@ -640,14 +682,15 @@ class Alert(BaseWeather):
 #         return payload
 
 
-@register(commands=['locate', 'find', 'latlng', 'latlong'])
+@register(commands=['locate', 'find', 'latlng', 'latlong', 'elevation', 'elev', 'coords'])
 class Locate(BaseWeather):
     elevation_api = "https://maps.googleapis.com/maps/api/elevation/json"
     template = "{{ name|nc }}: {{ lat }}, {{ lng }} {{ 'Elevation'|tc }}: {{ elevation|int }}m ({{ elevation_ft|int }}ft)"
 
     def get_elevation(self, latlng):
+        key = str(self.config['youtube_key'])        
         try:
-            req = requests.get(self.elevation_api, params={'locations': ','.join(map(str, latlng))})
+            req = requests.get(self.elevation_api, params={'locations': ','.join(map(str, latlng,)), 'key': key})
             if req.status_code != 200:
                 return None
             json = req.json()
@@ -659,7 +702,9 @@ class Locate(BaseWeather):
 
     def context(self, msg):
         payload = super(Locate, self).context(msg)
-        elevation = self.get_elevation((payload['lat'], payload['lng']))
+        lat = payload['lat']
+        lng = payload['lng']
+        elevation = self.get_elevation((lat, lng))
         if elevation:
             payload['elevation'] = elevation
             payload['elevation_ft'] = meters_to_feet(elevation)
