@@ -281,7 +281,7 @@ class BaseWeather(base.Command):
             unit_type = 'si' if args.C else 'us' if args.F else 'auto'
         else:
             unit_type = 'auto'
-        forecast = forecastio.load_forecast(self.config['forecast_io_secret'], float(lat), float(lng), units=unit_type)
+        forecast = forecastio.load_forecast(self.config['pirate_weather_secret'], float(lat), float(lng), units=unit_type)
         units = self.get_units(forecast.json['flags']['units'])
         payload = {
             'name': name,
