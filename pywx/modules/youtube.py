@@ -54,7 +54,7 @@ class YoutubeParser(ParserCommand):
                     vid = params.get('v')[0] if 'v' in params else None
                     if not vid:
                         split = url.path.split('/')
-                        if split[1] == 'v':
+                        if split[1] == 'v' or split[1] == 'shorts':
                             vid = split[2]
                 if 'youtu.be' == url.netloc:
                     vid = url.path.strip('/')
@@ -73,6 +73,7 @@ class YoutubeParser(ParserCommand):
                 continue
 
             title = video["snippet"]["title"]
+            channel = video['snippet']['channelTitle']
             duration = pretty_iso_duration(video['contentDetails']['duration'])
-            lines.append(f"YOUTUBE: {title} [{duration}]")
+            lines.append(f"YOUTUBE: {title} [{duration}] [{channel}]")
         return lines
