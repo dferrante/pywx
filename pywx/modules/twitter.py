@@ -41,8 +41,8 @@ class TwitterParser(ParserCommand):
                             continue
                         if len(tweetlines) == 0:
                             username = irc_color(f'@{username}', 'orange', reset=True)
-                            blue_loser = irc_color('[LOSER ALERT]', 'royal', reset=True) if verified else ''
-                            tweetlines.append(f'{username} {blue_loser}: {tweetline}')
+                            blue_loser = irc_color(' [LOSER ALERT]', 'royal', reset=True) if verified else ''
+                            tweetlines.append(f'{username}{blue_loser}: {tweetline}')
                         else:
                             tweetlines.append(f'{tweetline}')
                     lines.extend(tweetlines)
