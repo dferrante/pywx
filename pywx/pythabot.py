@@ -40,7 +40,8 @@ class Pythabot:
                 log.info('Running periodic task: %s', task)
                 self.registry.periodic_tasks[task]['last_run'] = time.time()
                 for msg in task.run():
-                    for chan in self.config['chans']:
+                    chans_to_msg = self.registry.periodic_tasks[task]['chans'] if self.registry.periodic_tasks[task]['chans'] else self.config['chans']
+                    for chan in chans_to_msg:
                         self.privmsg(chan, msg)
 
     def initparse(self, line):
@@ -135,6 +136,7 @@ class Pythabot:
         log.info('PRIVMSG: %s', msg.encode('utf-8'))
         fullmsg = f'PRIVMSG {send_to} :{msg}\r\n'.encode('utf-8')
         self.sock.send(fullmsg)
+        time.sleep(.5)
 
     def quit(self, errmsg):
         log.error("%s", errmsg)

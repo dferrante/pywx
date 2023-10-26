@@ -29,9 +29,9 @@ def register(commands):
     return add_class
 
 
-def register_periodic(run_every=60):
+def register_periodic(run_every=60, chans=None):
     def add_class(cmd):
-        registry.periodic_klasses[cmd] = {'run_every': run_every, 'last_run': None}
+        registry.periodic_klasses[cmd] = {'run_every': run_every, 'last_run': None, 'chans': chans}
         return cmd
     return add_class
 
