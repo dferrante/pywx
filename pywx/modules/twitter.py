@@ -1,7 +1,7 @@
+import json
 import logging
+import subprocess
 from urllib.parse import urlparse
-
-import tweepy
 
 from .base import ParserCommand, irc_color
 from .registry import register_parser
@@ -24,16 +24,13 @@ class TwitterParser(ParserCommand):
                     username = path.split('/')[1]
                     twid = path.split('/')[3]
 
-                    client = tweepy.Client(self.config["twitter_token"])
-                    data = client.get_tweet(twid, tweet_fields='entities', user_fields='verified')
-                    tweet = data.data.data
-                    text = tweet['text']
+                    scrape = subprocess.run(['snscrape', '--jsonl', 'twitter-tweet', twid], capture_output=True, check=False)
+                    if scrape.returncode != 0:
+                        return []
 
-                    user_data = client.get_user(username=username, user_fields='verified')
-                    verified = user_data.data.data['verified']
-
-                    for url in tweet.get('entities', {}).get('urls', []):
-                        text = text.replace(url['url'], url['expanded_url'])
+                    tweet = json.loads(scrape.stdout)
+                    text = tweet['content']
+                    verified = tweet['user']['verified']
 
                     tweetlines = []
                     for tweetline in text.split('\n'):
