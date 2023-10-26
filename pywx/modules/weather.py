@@ -7,15 +7,16 @@ import re
 import time
 
 import dataset
-import forecastio
 import pytz
 import requests
 from geopy.geocoders import GoogleV3
 from jinja2 import pass_context
+from pyowm.owm import OWM
+
+import forecastio
 
 from . import base
 from .registry import register
-
 
 wind_directions = [(11.25, 'N'),(33.75, 'NNE'),(56.25, 'NE'),(78.75, 'ENE'),(101.25, 'E'),(123.75, 'ESE'),
                    (146.25, 'SE'),(168.75, 'SSE'),(191.25, 'S'),(213.75, 'SSW'),(236.25, 'SW'),(258.75, 'WSW'),
@@ -98,6 +99,7 @@ alert_colors = (
 )
 temp_colors = ((-100, 'pink'), (15, 'pink'), (32, 'royal'), (50, 'green'), (65, 'lime'), (75, 'yellow'), (85, 'orange'), (150, 'red'))
 dewpoint_colors = ((-100, 'royal'), (15, 'green'), (60, 'lime'), (65, 'yellow'), (70, 'orange'), (75, 'red'), (150, 'red'))
+aqi_colors = ((-100, 'green'), (50, 'yellow'), (100, 'orange'), (150, 'red'), (200, 'purple'), (300, 'maroon'))
 spark_graph = list("▁▂▃▅▇")
 
 
@@ -123,6 +125,13 @@ def color_temp(ctx, temp):
     color = first_greater_selector(colored_temp, temp_colors)
     bold = True if colored_temp > 100 else False
     return base.irc_color(pretty_temp(ctx, temp), color, bold=bold)
+
+
+@pass_context
+def aqi_color(ctx, aqi):
+    color = first_greater_selector(aqi, aqi_colors)
+    bold = True if aqi > 150 else False
+    return base.irc_color(aqi, color, bold=bold)
 
 
 @pass_context
@@ -185,6 +194,7 @@ class BaseWeather(base.Command):
         super(BaseWeather, self).load_filters()
         self.environment.filters['temp'] = pretty_temp
         self.environment.filters['ctemp'] = color_temp
+        self.environment.filters['aqicolor'] = aqi_color
         self.environment.filters['dptemp'] = color_dewpoint
         self.environment.filters['spark_temp'] = spark_temp
         self.environment.filters['spark_dewpoint'] = spark_dewpoint
@@ -623,6 +633,45 @@ class Alert(BaseWeather):
             lines.append(datetime.datetime.fromtimestamp(alert['expires']).strftime('Expires: %Y-%m-%d %H:%M'))
         return lines
 
+
+@register(commands=['aqi'])
+class AQI(BaseWeather):
+    template = """
+        {{ name|nc }}:
+        {{ 'AQI'|tc }}: {{ air_status.aqi|aqicolor }}
+        {{ 'CO'|tc }}: {{ air_status.co }}
+        {{ 'NO'|tc }}: {{ air_status.no }}
+        {{ 'NO2'|tc }}: {{ air_status.no2 }}
+        {{ 'Ozone'|tc }}: {{ air_status.o3 }}
+        {{ 'SO2'|tc }}: {{ air_status.so2 }}
+        {{ 'PM 2.5'|tc }}: {{ air_status.pm2_5 }}
+        {{ 'PM 10'|tc }}: {{ air_status.pm10 }}
+        {{ 'NH3'|tc }}: {{ air_status.nh3 }}
+    """
+
+    def parse_args(self, msg):
+        parser = base.IRCArgumentParser()
+        parser.add_argument('location', type=str, default=None, nargs='*')
+        return parser.parse_args(msg)
+
+    def context(self, msg):
+        args = self.parse_args(msg)
+        name, lat, lng = self.match_location(msg['sender'], args.location)
+        owm = OWM(self.config['open_weather_secret'])
+        mgr = owm.airpollution_manager()
+
+        air_status = mgr.air_quality_at_coords(lng, lat)
+        forecast = mgr.air_quality_forecast_at_coords(lat, lng)
+
+        payload = {
+            'name': name,
+            'lat': lat,
+            'lng': lng,
+            'air_status': air_status,
+            'forecast': forecast,
+            'args': args,
+        }
+        return payload
 
 # @register(commands=['radar',])
 # class Radar(BaseWeather):
