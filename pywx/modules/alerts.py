@@ -11,15 +11,26 @@ global LAST_ALERT
 LAST_ALERT = None
 
 
+def highlight(text, phrase):
+    return text.replace(phrase, base.irc_color(phrase, 'maroon'))
+
+
 class Scanner(base.Command):
     multiline = True
-    template = """{{ datetime|c('royal') }}: Responding: [{{ responding|c(station_color) }}]
-                    {% if full_address %} {{ full_address|c(vip_word_color) }} {{ gmaps_url }} {% elif event['town'] %} {{ event['town']|c(vip_word_color) }} {% elif event['address'] %} {{ event['address']|c(vip_word_color) }} {% endif %}
-                    {{ transcription }}"""
+    template = """-------------
+        {{ datetime|c('royal') }} - {{ responding|c(station_color) }} - {{ event.id }}
+        {% if full_address %} {{ full_address|c(vip_word_color) }} {% elif event['town'] %} {{ event['town']|c(vip_word_color) }} {% elif event['address'] %} {{ event['address']|c(vip_word_color) }} {% endif %}
+        {% if full_address %} {{ gmaps_url }} {% endif %}
+        {{ transcription|highlight(event['symptom']) }}"""
 
     important_stations = ['45fire', '46fire', 'sbes']
     very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west']
     important_words = ['clinton', 'annandale', 'school']
+
+    repeating_regex = re.compile(r"(?P<first>.*)(Repeating|repeating|Paging)[\s.,]+(?P<repeat>.*)")
+    city_regex = re.compile(r"(?P<town>(City|Town|city|town) of \w+)")
+    town_regex = re.compile(r"(?P<town>(West |East |Glen |High )?\w+\s(Borough|Township|County|Town|City|township|borough))")
+    county_regex = re.compile(r"(?P<town>(West |East |Glen |High )?\w+\s(County))[\s,.]{,3}")
 
     event_table = None
 
@@ -28,15 +39,18 @@ class Scanner(base.Command):
         database = dataset.connect(config['alerts_database'])
         self.event_table = database['scanner']
 
+    def load_filters(self):
+        super().load_filters()
+        self.environment.filters['highlight'] = highlight
+
     def event_context(self, event):
         time = event['datetime'].strftime('%-I:%M%p')
-        responding = ' | '.join([unit for unit in event['responding'].split(',')])
+        responding = ' - '.join([unit for unit in event['responding'].split(',')])
         station_color = 'red' if any([station in event['responding'].lower() for station in self.important_stations]) else 'orange'
         vip_word_color = 'yellow' if any([word in event['transcription'].lower() for word in self.important_words]) else 'royal'
         vip_word_color = 'red' if any([word in event['transcription'].lower() for word in self.very_important_words]) else vip_word_color
 
-        repeating_regex = re.compile(r"(?P<first>.*)(Repeating|repeating|Paging)[\s.,]+(?P<repeat>.*)")
-        repeat_search = repeating_regex.search(event['transcription'])
+        repeat_search = self.repeating_regex.search(event['transcription'])
         if repeat_search:
             transcription = '\n'.join([repeat_search.group('first'), 'Repeating ' + repeat_search.group('repeat')])
         else:
