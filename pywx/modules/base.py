@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*- #
 import argparse
-import datetime
 import logging
 import re
 
 from jinja2 import Environment
 
-MAX_MSG_LEN = 375 #USE CONFIG VALUE
+MAX_MSG_LEN = 451
 
 cmap = {
     'black': '\x0301',
@@ -31,15 +30,16 @@ cmap = {
     'italic': '\x1D',
     'underline': '\x1F',
 }
+colors = [c for c in cmap.keys() if c not in ['null', 'reset', 'bold', 'italic', 'underline']]
 
 
 def irc_color(value, color, nulled=True, bold=False, italics=False, reset=False, underline=False):
     color_code = cmap.get(color, '')
     nulled = cmap['null'] if nulled else ''
     bold = cmap['bold'] if bold else ''
-    italics = cmap['italic'] if bold else ''
-    reset = cmap['reset'] if bold else ''
-    underline = cmap['underline'] if bold else ''
+    italics = cmap['italic'] if italics else ''
+    reset = cmap['reset'] if reset else ''
+    underline = cmap['underline'] if underline else ''
     return f"{bold}{italics}{underline}{color_code}{value}{nulled}{reset}{bold}{italics}{underline}"
 
 
@@ -77,10 +77,13 @@ class Command(object):
     permission = "all"
     private_only = False
     template = None
+    multiline = False
+    max_msg_length = MAX_MSG_LEN
 
     def __init__(self, config):
         self.config = config
         self.environment = Environment()
+        self.max_msg_length = self.config.get('max_msg_length', MAX_MSG_LEN)
         self.load_filters()
 
     def load_filters(self):
@@ -110,21 +113,30 @@ class Command(object):
         if not reply:
             return []
 
-        #clean up formatting
-        reply = re.sub(r'\n', '', reply)
-        reply = re.sub(r'\s+', ' ', reply)
-        reply = re.sub(r'^\s', '', reply)
-        reply = re.sub(r'\s$', '', reply)
-        if datetime.date.today().month == 10 and datetime.date.today().day == 22:
-            #CAPS LOCK DAY
-            reply = reply.upper()
+        if not self.multiline:
+            reply = re.sub(r'\s+', ' ', reply)
+            reply = reply.strip()
+            reply = re.sub(r'\n', '', reply)
+            lines = []
+            line = []
+            for word in reply.split(' '):
+                line.append(word)
+                if len(' '.join(line)) > self.max_msg_length:
+                    lines.append(' '.join(line[:-1]))
+                    line = [word]
+            lines.append(' '.join(line))
+        else:
+            lines = []
+            line_lines = reply.split('\n')
+            for reply in line_lines:
+                reply = re.sub(r'\s+', ' ', reply)
+                reply = reply.strip()
+                line = []
+                for word in reply.split(' '):
+                    line.append(word)
+                    if len(' '.join(line)) > self.max_msg_length:
+                        lines.append(' '.join(line[:-1]))
+                        line = [word]
+                lines.append(' '.join(line))
 
-        lines = []
-        line = []
-        for word in reply.split(' '):
-            line.append(word)
-            if sum(map(len, line)) > self.config.get('MAX_MSG_LENgth', 1000):
-                lines.append(' '.join(line[:-1]))
-                line = [word]
-        lines.append(' '.join(line))
         return lines
