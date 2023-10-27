@@ -17,10 +17,10 @@ def highlight(text, phrase):
 class Scanner(base.Command):
     multiline = True
     template = """{% for event in events %}-------------
-        {{ datetime|c('royal') }} - {{ responding|c(station_color) }} - {{ event.id }}
-        {% if full_address %} {{ full_address|c(vip_word_color) }} {% elif event['town'] %} {{ event['town']|c(vip_word_color) }} {% elif event['address'] %} {{ event['address']|c(vip_word_color) }} {% endif %}
-        {% if full_address %} {{ gmaps_url }} {% endif %}
-        {{ transcription|highlight(event['symptom']) }}{% endfor %}"""
+        {{ event.datetime|c('royal') }} - {{ event.responding|c(event.station_color) }} - {{ event.id }}
+        {% if event.full_address %} {{ event.full_address|c(event.vip_word_color) }} {% elif event.town %} {{ event.town|c(event.vip_word_color) }} {% elif event.address %} {{ event.address|c(event.vip_word_color) }} {% endif %}
+        {% if event.full_address %} {{ event.gmaps_url }} {% endif %}
+        {{ event.transcription|highlight(event.symptom) }}{% endfor %}"""
 
     important_stations = ['45fire', '46fire', 'sbes']
     very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west']
@@ -63,6 +63,10 @@ class Scanner(base.Command):
                 transcription = self.townsplit(event['transcription'], event['town'])
 
             payload = {
+                'id': event['id'],
+                'town': event['town'],
+                'address': event['address'],
+                'symptom': event['symptom'],
                 'datetime': time,
                 'responding': responding,
                 'vip_word_color': vip_word_color,
