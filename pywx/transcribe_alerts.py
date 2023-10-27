@@ -168,7 +168,8 @@ def parse_alerts():
         'syncope': ['synchro'],
         'vomiting': ['abominate'],
         'Town of Clinton': ['town of Clinton'],
-        'Shop Rite': ['shop right']
+        'Shop Rite': ['shop right'],
+        'CO2 alarm': ['seal alarm']
     }
 
     street_types = '|'.join([
