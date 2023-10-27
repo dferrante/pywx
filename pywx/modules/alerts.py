@@ -88,10 +88,10 @@ class ScannerAlerter(Scanner):
         if LAST_ALERT is None:
             LAST_ALERT = self.event_table.find_one(order_by=['-id'])['id']
 
-        event = self.event_table.find(id={'gt': LAST_ALERT}, is_transcribed=True, order_by=['id'])
-        if event:
-            LAST_ALERT = event['id']
-            return self.event_context(event)
+        events = self.event_table.find(id={'gt': LAST_ALERT}, is_transcribed=True, order_by=['id'])
+        if events:
+            LAST_ALERT = self.event_table.find_one(order_by=['-id'])['id']
+            return self.event_context(events)
         raise base.NoMessage
 
 
