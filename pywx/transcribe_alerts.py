@@ -89,7 +89,7 @@ def parse_alerts():
             print("  - ", unit)
         print()
 
-        local_filename = 'temp.mp3'
+        local_filename = '/tmp/temp.mp3'
         with requests.get(event['mp3_url'], stream=True) as r:
             with open(local_filename, 'wb') as f:
                 shutil.copyfileobj(r.raw, f)
