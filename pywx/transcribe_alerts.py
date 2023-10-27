@@ -94,7 +94,7 @@ def parse_alerts():
             with open(local_filename, 'wb') as f:
                 shutil.copyfileobj(r.raw, f)
 
-        segments, _ = model.transcribe("temp.mp3", beam_size=5, vad_filter=True)
+        segments, _ = model.transcribe(local_filename, beam_size=5, vad_filter=True)
         transcription = []
         for segment in segments:
             transcription.append(segment.text)
