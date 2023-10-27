@@ -72,7 +72,7 @@ class Scanner(base.Command):
 
         if event['address'] and event['town']:
             full_address = f"{event['address']}, {event['town']}, NJ"
-            gmaps_url = f'https://www.google.com/maps/place/{quote_plus(full_address)}'
+            gmaps_url = f'https://www.google.com/maps/place/{quote_plus(full_address)}/data=!3m1!1e3'
             payload['full_address'] = full_address
             payload['gmaps_url'] = gmaps_url
 
