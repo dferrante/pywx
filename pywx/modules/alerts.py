@@ -12,7 +12,7 @@ LAST_ALERT = None
 
 
 def highlight(text, phrase):
-    return text.replace(phrase, base.irc_color(phrase, 'maroon'))
+    return text.replace(phrase, base.irc_color(phrase, 'aqua'))
 
 
 class Scanner(base.Command):
@@ -28,9 +28,6 @@ class Scanner(base.Command):
     important_words = ['clinton', 'annandale', 'school']
 
     repeating_regex = re.compile(r"(?P<first>.*)(Repeating|repeating|Paging)[\s.,]+(?P<repeat>.*)")
-    city_regex = re.compile(r"(?P<town>(City|Town|city|town) of \w+)")
-    town_regex = re.compile(r"(?P<town>(West |East |Glen |High )?\w+\s(Borough|Township|County|Town|City|township|borough))")
-    county_regex = re.compile(r"(?P<town>(West |East |Glen |High )?\w+\s(County))[\s,.]{,3}")
 
     event_table = None
 
@@ -43,6 +40,12 @@ class Scanner(base.Command):
         super().load_filters()
         self.environment.filters['highlight'] = highlight
 
+    def townsplit(self, text, town):
+        if town in text:
+            index = text.index(town)
+            return text[index + len(town):].lstrip(',').lstrip('.').strip()
+        return text
+
     def event_context(self, event):
         time = event['datetime'].strftime('%-I:%M%p')
         responding = ' - '.join([unit for unit in event['responding'].split(',')])
@@ -52,9 +55,11 @@ class Scanner(base.Command):
 
         repeat_search = self.repeating_regex.search(event['transcription'])
         if repeat_search:
-            transcription = '\n'.join([repeat_search.group('first'), 'Repeating ' + repeat_search.group('repeat')])
+            first = self.townsplit(repeat_search.group('first'), event['town'])
+            repeat = self.townsplit(repeat_search.group('repeat'), event['town'])
+            transcription = '\n'.join([first, 'Repeating ' + repeat])
         else:
-            transcription = event['transcription']
+            transcription = self.townsplit(event['transcription'], event['town'])
 
         payload = {
             'datetime': time,
