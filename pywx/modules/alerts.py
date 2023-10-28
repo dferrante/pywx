@@ -7,7 +7,7 @@ from . import base
 from .registry import register, register_periodic
 
 global LAST_ALERT
-LAST_ALERT = 2641
+LAST_ALERT = None
 
 
 def highlight(text, phrase):
