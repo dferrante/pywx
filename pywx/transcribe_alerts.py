@@ -74,8 +74,9 @@ def parse_alerts():
 
         existing_event = event_table.find_one(county=event['county'], datetime=first_datetime)
         if existing_event:
-            print('updating', existing_event['mp3_url'])
-            event_table.update(dict(responding=responding, id=existing_event['id']), ['id'])
+            if responding != existing_event['responding']:
+                print('updating', existing_event['mp3_url'])
+                event_table.update(dict(responding=responding, id=existing_event['id']), ['id'])
         else:
             print('inserting', event['mp3_url'])
             event_table.insert(dict(county=event['county'], datetime=first_datetime, responding=responding, mp3_url=event['mp3_url'], is_transcribed=False))
