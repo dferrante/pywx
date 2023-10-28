@@ -13,8 +13,8 @@ class Register(object):
             for cmd in cmds:
                 self.commands[cmd] = cmdcls
 
-        for cls, attr in self.periodic_klasses.items():
-            self.periodic_tasks[cls(config)] = attr
+        for name, attr in self.periodic_klasses.items():
+            self.periodic_tasks[name] = attr
 
         self.parsers = [cls(config) for cls in self.parser_klasses]
 
@@ -29,9 +29,9 @@ def register(commands):
     return add_class
 
 
-def register_periodic(run_every=60, chans=None):
+def register_periodic(name, run_every=60, chans=None):
     def add_class(cmd):
-        registry.periodic_klasses[cmd] = {'run_every': run_every, 'last_run': None, 'chans': chans}
+        registry.periodic_klasses[name] = {'run_every': run_every, 'last_run': None, 'chans': chans, 'command': cmd}
         return cmd
     return add_class
 

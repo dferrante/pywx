@@ -80,7 +80,7 @@ class Earthquake(base.Command):
         return payload
 
 
-@register_periodic(150)
+@register_periodic('earthquake', 150)
 class EarthquakeAlerter(Earthquake):
     usgs_api = 'http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_hour.geojson'
     ptwc_api = ''

@@ -33,14 +33,14 @@ class Pythabot:
             self.quit(f'Could not connect to port {self.config["port"]}, on {self.config["host"]}.')
 
     def run_periodic_commands(self):
-        for task, attrs in self.registry.periodic_tasks.items():
+        for name, attrs in self.registry.periodic_tasks.items():
             if attrs['last_run'] and attrs['last_run'] + attrs['run_every'] >= time.time():
                 continue
             else:
-                log.info('Running periodic task: %s', task)
-                self.registry.periodic_tasks[task]['last_run'] = time.time()
-                for msg in task.run():
-                    chans_to_msg = self.registry.periodic_tasks[task]['chans'] if self.registry.periodic_tasks[task]['chans'] else self.config['chans']
+                log.info('Running periodic task: %s', name)
+                self.registry.periodic_tasks[name]['last_run'] = time.time()
+                for msg in attrs['command'](self.config).run():
+                    chans_to_msg = attrs['chans'] if attrs['chans'] else self.config['chans']
                     for chan in chans_to_msg:
                         self.privmsg(chan, msg)
 
