@@ -16,6 +16,13 @@ def test_command(command, args):
         print(repr(line))
 
 
+def test_periodic_command(config, command):
+    lines = reg.periodic_tasks[command]['command'](config).run()
+    for line in lines:
+        print('--')
+        print(repr(line))
+
+
 def test_parser(msg):
     parsed_things = []
     msg = {'msg': msg}
@@ -42,5 +49,8 @@ if __name__ == '__main__':
     reg = registry.registry
     reg.load_modules(config)
 
-    test_command('lastalert', '170')
+    # test_command('lastalert', '170')
     # test_parser('https://www.youtube.com/watch?v=UAykz73MdsA')
+    test_periodic_command(config, "scanner")
+    test_periodic_command(config, "scanner")
+    test_periodic_command(config, "scanner")
