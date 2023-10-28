@@ -11,7 +11,9 @@ LAST_ALERT = None
 
 
 def highlight(text, phrase):
-    return text.replace(phrase, base.irc_color(phrase, 'aqua'))
+    if phrase:
+        return text.replace(phrase, base.irc_color(phrase, 'aqua'))
+    return text
 
 
 class Scanner(base.Command):
