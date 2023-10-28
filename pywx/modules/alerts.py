@@ -7,7 +7,7 @@ from . import base
 from .registry import register, register_periodic
 
 global LAST_ALERT
-LAST_ALERT = None
+LAST_ALERT = 2641
 
 
 def highlight(text, phrase):
@@ -16,11 +16,11 @@ def highlight(text, phrase):
 
 class Scanner(base.Command):
     multiline = True
-    template = """{% for event in events %}-------------
+    template = """-------------
         {{ datetime|c('royal') }} - {{ responding|c(station_color) }} - {{ event.id }}
-        {% if full_address %} {{ full_address|c(vip_word_color) }} {% elif event['town'] %} {{ event['town']|c(vip_word_color) }} {% elif event['address'] %} {{ event['address']|c(vip_word_color) }} {% endif %}
+        {% if full_address %} {{ full_address|c(vip_word_color) }} {% elif event.town %} {{ event.town|c(vip_word_color) }} {% elif event.address %} {{ event.address|c(vip_word_color) }} {% endif %}
         {% if full_address %} {{ gmaps_url }} {% endif %}
-        {{ transcription|highlight(event['symptom']) }}{% endfor %}"""
+        {{ transcription|highlight(event.symptom) }}"""
 
     important_stations = ['45fire', '46fire', 'sbes']
     very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west']
@@ -28,12 +28,16 @@ class Scanner(base.Command):
 
     repeating_regex = re.compile(r"(?P<first>.*)(Repeating|repeating|Paging)[\s.,]+(?P<repeat>.*)")
 
+    database = None
     event_table = None
 
     def __init__(self, config):
         super().__init__(config)
-        database = dataset.connect(config['alerts_database'])
-        self.event_table = database['scanner']
+        self.database = dataset.connect(config['alerts_database'])
+        self.event_table = self.database['scanner']
+
+    def __del__(self):
+        self.database.close()
 
     def load_filters(self):
         super().load_filters()
@@ -45,53 +49,51 @@ class Scanner(base.Command):
             return text[index + len(town):].lstrip(',').lstrip('.').strip()
         return text
 
-    def event_context(self, events):
-        event_payloads = []
-        for event in events:
-            time = event['datetime'].strftime('%-I:%M%p')
-            responding = ' - '.join([unit for unit in event['responding'].split(',')])
-            station_color = 'red' if any([station in event['responding'].lower() for station in self.important_stations]) else 'orange'
-            vip_word_color = 'yellow' if any([word in event['transcription'].lower() for word in self.important_words]) else 'royal'
-            vip_word_color = 'red' if any([word in event['transcription'].lower() for word in self.very_important_words]) else vip_word_color
+    def event_context(self, event):
+        time = event['datetime'].strftime('%-I:%M%p')
+        responding = ' - '.join([unit for unit in event['responding'].split(',')])
+        station_color = 'red' if any([station in event['responding'].lower() for station in self.important_stations]) else 'orange'
+        vip_word_color = 'yellow' if any([word in event['transcription'].lower() for word in self.important_words]) else 'royal'
+        vip_word_color = 'red' if any([word in event['transcription'].lower() for word in self.very_important_words]) else vip_word_color
 
-            repeat_search = self.repeating_regex.search(event['transcription'])
-            if repeat_search:
-                first = self.townsplit(repeat_search.group('first'), event['town'])
-                repeat = self.townsplit(repeat_search.group('repeat'), event['town'])
-                transcription = '\n'.join([first, 'Repeating ' + repeat])
-            else:
-                transcription = self.townsplit(event['transcription'], event['town'])
+        repeat_search = self.repeating_regex.search(event['transcription'])
+        if repeat_search:
+            first = self.townsplit(repeat_search.group('first'), event['town'])
+            repeat = self.townsplit(repeat_search.group('repeat'), event['town'])
+            transcription = '\n'.join([first, 'Repeating ' + repeat])
+        else:
+            transcription = self.townsplit(event['transcription'], event['town'])
 
-            payload = {
-                'datetime': time,
-                'responding': responding,
-                'vip_word_color': vip_word_color,
-                'transcription': transcription,
-                'station_color': station_color,
-                'event': event,
-            }
+        payload = {
+            'datetime': time,
+            'responding': responding,
+            'vip_word_color': vip_word_color,
+            'transcription': transcription,
+            'station_color': station_color,
+            'event': event,
+        }
 
-            if event['address'] and event['town']:
-                full_address = f"{event['address']}, {event['town']}, NJ"
-                gmaps_url = f'https://www.google.com/maps/place/{quote_plus(full_address)}/data=!3m1!1e3'
-                payload['full_address'] = full_address
-                payload['gmaps_url'] = gmaps_url
-            event_payloads.append(payload)
-        return {'events': event_payloads}
+        if event['address'] and event['town']:
+            full_address = f"{event['address']}, {event['town']}, NJ"
+            gmaps_url = f'https://www.google.com/maps/place/{quote_plus(full_address)}/data=!3m1!1e3'
+            payload['full_address'] = full_address
+            payload['gmaps_url'] = gmaps_url
+
+        return payload
 
 
-@register_periodic(30, chans=['#scanner'])
+@register_periodic('scanner', 30, chans=['#scanner'])
 class ScannerAlerter(Scanner):
     def context(self, msg):
         global LAST_ALERT
 
         if LAST_ALERT is None:
-            LAST_ALERT = self.event_table.find_one(order_by=['-id'])['id']
+            LAST_ALERT = int(self.event_table.find_one(order_by=['-id'])['id'])
 
-        events = self.event_table.find(id={'gt': LAST_ALERT}, is_transcribed=True, order_by=['id'])
-        if events:
-            LAST_ALERT = self.event_table.find_one(order_by=['-id'])['id']
-            return self.event_context(events)
+        event = self.event_table.find_one(id={'gt': LAST_ALERT}, is_transcribed=True, order_by=['id'])
+        if event:
+            LAST_ALERT = int(event['id'])
+            return self.event_context(event)
         raise base.NoMessage
 
 
@@ -110,4 +112,4 @@ class LastScanner(Scanner):
                 raise base.ArgumentError('Event not found')
         else:
             event = self.event_table.find_one(is_transcribed=True, order_by=['-datetime'])
-        return self.event_context([event])
+        return self.event_context(event)
