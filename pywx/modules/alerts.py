@@ -55,8 +55,8 @@ class Scanner(base.Command):
         time = event['datetime'].strftime('%-I:%M%p')
         responding = ' - '.join([unit for unit in event['responding'].split(',')])
         station_color = 'red' if any([station in event['responding'].lower() for station in self.important_stations]) else 'orange'
-        vip_word_color = 'yellow' if any([word in event['transcription'].lower() for word in self.important_words]) else 'royal'
-        vip_word_color = 'red' if any([word in event['transcription'].lower() for word in self.very_important_words]) else vip_word_color
+        vip_word_color = 'yellow' if any([word in event['transcription'].lower() for word in self.important_words if word]) else 'royal'
+        vip_word_color = 'red' if any([word in event['transcription'].lower() for word in self.very_important_words if word]) else vip_word_color
 
         repeat_search = self.repeating_regex.search(event['transcription'])
         if repeat_search:
@@ -90,7 +90,7 @@ class ScannerAlerter(Scanner):
         log.info('running scanner')
         event = self.event_table.find_one(is_irc_notified=False, order_by=['datetime'])
         if event:
-            log.info('found event {}', event['id'])
+            log.info(f'found event {event["id"]}')
             event['is_irc_notified'] = True
             self.event_table.update(dict(event), ['id'])
             return self.event_context(event)
