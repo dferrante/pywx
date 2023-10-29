@@ -46,7 +46,7 @@ class Scanner(base.Command):
         self.environment.filters['highlight'] = highlight
 
     def townsplit(self, text, town):
-        if town in text:
+        if town and town in text:
             index = text.index(town)
             return text[index + len(town):].lstrip(',').lstrip('.').strip()
         return text
