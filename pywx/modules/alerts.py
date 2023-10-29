@@ -88,7 +88,7 @@ class Scanner(base.Command):
 class ScannerAlerter(Scanner):
     def context(self, msg):
         log.info('running scanner')
-        event = self.event_table.find_one(is_irc_notified=False, order_by=['datetime'])
+        event = self.event_table.find_one(is_irc_notified=False, is_transcribed=True, order_by=['datetime'])
         if event:
             log.info(f'found event {event["id"]}')
             event['is_irc_notified'] = True
