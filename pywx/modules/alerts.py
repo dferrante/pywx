@@ -1,3 +1,4 @@
+import logging as log
 import re
 from urllib.parse import quote_plus
 
@@ -5,6 +6,8 @@ import dataset
 
 from . import base
 from .registry import register, register_periodic
+
+log.basicConfig(level=log.INFO, format="%(asctime)-15s %(levelname)s %(message)s")
 
 
 def highlight(text, phrase):
@@ -84,11 +87,14 @@ class Scanner(base.Command):
 @register_periodic('scanner', 30, chans=['#scanner'])
 class ScannerAlerter(Scanner):
     def context(self, msg):
+        log.info('running scanner')
         event = self.event_table.find_one(is_irc_notified=False, order_by=['datetime'])
         if event:
+            log.info('found event {}', event['id'])
             event['is_irc_notified'] = True
             self.event_table.update(dict(event), ['id'])
             return self.event_context(event)
+        log.info('no new events')
         raise base.NoMessage
 
 
