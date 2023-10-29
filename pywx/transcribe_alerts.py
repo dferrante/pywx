@@ -102,7 +102,7 @@ def parse_alerts():
             print(segment.text)
 
         transcription = ' '.join(transcription)
-        event_table.update(dict(id=event['id'], transcription=transcription, is_transcribed=True), ['id'])
+        event_table.update(dict(id=event['id'], transcription=transcription), ['id'])
         print('-------------')
 
     age_to_int = {
@@ -191,7 +191,8 @@ def parse_alerts():
         'Pike',
         'plaza',
         'Crestway',
-        'Place'
+        'Place',
+        'Terrace'
     ])
 
     genders = r"(?P<gender>male|female|Male|Female)"
@@ -282,10 +283,10 @@ def parse_alerts():
                     event['gender'] = symptom_match.group('gender')
                 break
 
+        event['is_transcribed'] = True
         update_rows.append(event)
 
-    for row in update_rows:
-        event_table.update(dict(row), ['id'])
+    event_table.update_many(update_rows, ['id'])
     database.close()
 
 
