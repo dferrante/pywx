@@ -79,7 +79,7 @@ def parse_alerts():
                 event_table.update(dict(responding=responding, id=existing_event['id']), ['id'])
         else:
             print('inserting', event['mp3_url'])
-            event_table.insert(dict(county=event['county'], datetime=first_datetime, responding=responding, mp3_url=event['mp3_url'], is_transcribed=False))
+            event_table.insert(dict(county=event['county'], datetime=first_datetime, responding=responding, mp3_url=event['mp3_url'], is_transcribed=False, is_irc_notified=False))
 
     for event in event_table.find(is_transcribed=False, order_by=['datetime']):
         print('ID:', event['id'])
