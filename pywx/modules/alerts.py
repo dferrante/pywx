@@ -6,9 +6,6 @@ import dataset
 from . import base
 from .registry import register, register_periodic
 
-global LAST_ALERT
-LAST_ALERT = None
-
 
 def highlight(text, phrase):
     if phrase:
@@ -87,14 +84,10 @@ class Scanner(base.Command):
 @register_periodic('scanner', 30, chans=['#scanner'])
 class ScannerAlerter(Scanner):
     def context(self, msg):
-        global LAST_ALERT
-
-        if LAST_ALERT is None:
-            LAST_ALERT = int(self.event_table.find_one(order_by=['-id'])['id'])
-
-        event = self.event_table.find_one(id={'gt': LAST_ALERT}, is_transcribed=True, order_by=['id'])
+        event = self.event_table.find_one(is_irc_notified=False, order_by=['datetime'])
         if event:
-            LAST_ALERT = int(event['id'])
+            event['is_irc_notified'] = True
+            self.event_table.update(dict(event), ['id'])
             return self.event_context(event)
         raise base.NoMessage
 
