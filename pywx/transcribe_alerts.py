@@ -120,7 +120,7 @@ def parse_alerts():
     text_ages = '|'.join(age_to_int.keys())
     spelling_correct = {
         'Alexandria Township': ['Alexander Township'],
-        'Amwell': ['AML', 'Enwood', 'Danwell', 'End West', 'Amel', 'Seminole', 'Sandwell', 'Humbolt', 'Stanwell'],
+        'Amwell': ['AML', 'Enwood', 'Danwell', 'End West', 'Amel', 'Seminole', 'Sandwell', 'Humbolt', 'Stanwell', 'Amarillo'],
         'West Amwell': ['West Elmwood', 'West Emerald', 'West Hamilton', 'West Hamlet', 'West Hamlin'],
         'Amwell Township': ['Ammo', 'Amo Township', 'Animal Township', 'Antelope Township'],
         'Barley Sheaf': ['Barley Sheep', 'Barley Chief'],
@@ -129,17 +129,19 @@ def parse_alerts():
         'Branchburg': ['Bransford'],
         'Califon Borough': ['California Borough', 'Californ Borough', 'Califontine Borough', 'Caliphon Borough'],
         'Clinton': ['Quentin', 'Caldwin'],
-        'Clinton Township': ['Clint Township', 'Clayton Township', 'Clinton Tachib'],
+        'Clinton Township': ['Clint Township', 'Clayton Township', 'Clinton Tachib', 'Client Township', 'Clem Township'],
         'Croton': ['Croaten'],
-        'Flemington': ['Flamington', 'Clemington', 'Plumbington', 'Wilmington'],
+        'Flemington': ['Flamington', 'Clemington', 'Plumbington', 'Wilmington', 'Bloomington Borough', 'Flem', 'Flamingo Borough', 'Fulmington'],
         'Frenchtown': ['French Town'],
+        'Glen Gardner': ['Glenn Gardener', 'Glen Garner', 'Glengardner'],
         'High Bridge': ['Highbridge', 'highbridge'],
         'High Bridge Borough': ['Hybridsboro'],
         'Hunterdon': ['Huntingdon', 'Hunter'],
         'Hunterdon Care Center': ['Hunter and Care Center', 'Hunterdon and Care Center', 'Hunter Care Center'],
-        'Kingwood Township': ['with Township'],
-        'Lambertville': ['Lambeville', 'Lamerill', 'Lamberville', 'Lamerville', 'Laramville', 'Limberville', "Lamarville", 'Lambauville', 'Lumberphil', 'Lamberthill', 'Lamberthville', 'Laramieville'],
-        'Lebanon Township': ['11 on Township', '111 on Township', '11 to Township', 'Leavett on Township'],
+        'Kingwood Township': ['with Township', 'Kenwood Township'],
+        'Lambertville': ['Lambeville', 'Lamerill', 'Lamberville', 'Lamerville', 'Laramville', 'Limberville', "Lamarville", 'Lambauville', 'Lumberphil',
+                         'Lamberthill', 'Lamberthville', 'Laramieville', 'Lambeau', 'Lambeauville', 'Lamberphil', 'Lamberthal', 'Land Revolt', 'Landville', ],
+        'Lebanon Township': ['11 on Township', '111 on Township', '11 to Township', 'Leavett on Township', '11 Township'],
         'Lopatcong': ['Lopatkin'],
         'Paging': ['Puging'],
         'Pittstown': ['Pitsdown', 'Pitstown'],
@@ -147,9 +149,10 @@ def parse_alerts():
         'Raritan Township': [
             'where to Township', "we're in Township", 'route in Township', 'Aaron Township', 'Arrington Township', 'Barrington Township', 'Burrington Township',
             'Barret Township', 'Brereton Township', 'Rarity Township', 'Rarit Township', 'rear end tangent', 'ready to Township', 'ready to township',
-            'rare in a township', 'rare in town', 'rare in township', 'route and attach', 'route attached', 'Barrett Township'
+            'rare in a township', 'rare in town', 'rare in township', 'route and attach', 'route attached', 'Barrett Township', 'American Township',
+            'Arlington Township', 'Arroyo Township', 'Awareness Township', 'Burn Township', 'Byrne Township'
         ],
-        'Readington': ['Reddington'],
+        'Readington': ['Reddington', 'Ridington'],
         'Readington Township': ['responding to Township', 'running to Township', 'routing to Township', 'riding to Township', 'right on Township'],
         'Township': ['Tach', 'Tash', 'Tadge', 'Tatchett'],
         'Repeating': ['Skiing', 'Reading '],
@@ -170,10 +173,11 @@ def parse_alerts():
         'vomiting': ['abominate'],
         'Town of Clinton': ['town of Clinton'],
         'Shop Rite': ['shop right'],
-        'CO2 alarm': ['seal alarm']
+        'CO2 alarm': ['seal alarm'],
+        'fire alarm activation': ['firearm activation']
     }
 
-    street_types = '|'.join([
+    street_types = [
         'Street',
         'Road',
         'Lane',
@@ -189,11 +193,14 @@ def parse_alerts():
         'Hillway',
         'Pass',
         'Pike',
-        'plaza',
+        'Plaza',
         'Crestway',
         'Place',
-        'Terrace'
-    ])
+        'Terrace',
+        'Ridge'
+    ]
+    street_types += [s.lower() for s in street_types]
+    street_types = '|'.join(street_types)
 
     genders = r"(?P<gender>male|female|Male|Female)"
 
