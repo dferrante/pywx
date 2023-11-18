@@ -30,17 +30,6 @@ class Scanner(base.Command):
 
     repeating_regex = re.compile(r"(?P<first>.*)(Repeating|repeating|Paging)[\s.,]+(?P<repeat>.*)")
 
-    database = None
-    event_table = None
-
-    def __init__(self, config):
-        super().__init__(config)
-        self.database = dataset.connect(config['alerts_database'])
-        self.event_table = self.database['scanner']
-
-    def __del__(self):
-        self.database.close()
-
     def load_filters(self):
         super().load_filters()
         self.environment.filters['highlight'] = highlight
@@ -88,13 +77,18 @@ class Scanner(base.Command):
 class ScannerAlerter(Scanner):
     def context(self, msg):
         log.info('running scanner')
-        event = self.event_table.find_one(is_irc_notified=False, is_transcribed=True, order_by=['datetime'])
+        database = dataset.connect(self.config['alerts_database'])
+        event_table = database['scanner']
+
+        event = event_table.find_one(is_irc_notified=False, is_transcribed=True, order_by=['datetime'])
         if event:
             log.info(f'found event {event["id"]}')
             event['is_irc_notified'] = True
-            self.event_table.update(dict(event), ['id'])
+            event_table.update(dict(event), ['id'])
+            database.close()
             return self.event_context(event)
         log.info('no new events')
+        database.close()
         raise base.NoMessage
 
 
@@ -106,11 +100,16 @@ class LastScanner(Scanner):
         return parser.parse_args(msg)
 
     def context(self, msg):
+        database = dataset.connect(self.config['alerts_database'])
+        event_table = database['scanner']
+
         args = self.parse_args(msg)
         if args.id:
-            event = self.event_table.find_one(id=int(args.id[0]))
+            event = event_table.find_one(id=int(args.id[0]))
             if not event:
+                database.close()
                 raise base.ArgumentError('Event not found')
         else:
-            event = self.event_table.find_one(is_transcribed=True, order_by=['-datetime'])
+            event = event_table.find_one(is_transcribed=True, order_by=['-datetime'])
+        database.close()
         return self.event_context(event)
