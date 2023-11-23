@@ -168,7 +168,7 @@ def parse_alerts():
         'lift assist': ['left assist', 'Leipzig'],
         'responding': ['spawning'],
         'syncopal': ['sinkable', 'sickable', 'singapore', 'Singapore', 'syncable'],
-        'syncopal episode': ['single episode'],
+        'syncopal episode': ['single episode', 'sinkhole episode'],
         'syncope': ['synchro'],
         'vomiting': ['abominate'],
         'Town of Clinton': ['town of Clinton'],
