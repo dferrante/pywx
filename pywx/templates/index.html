@@ -11,11 +11,23 @@
     <head>
     <body>
         {% for event in events %}
-            <p>-------------</p>
-            <div style="white-space: nowrap">asdf{{ event['datetime']|c('royal') }} - {{ event['responding']|c(event['station_color']) }} - {{ event['event']['id'] }}</div>
-            {% if event['full_address'] %} {{ event['full_address']|c(event['vip_word_color']) }} {% elif event['event']['town'] %} {{ event['event']['town']|c(event['vip_word_color']) }} {% elif event.address %} {{ event.address|c(event['vip_word_color']) }} {% endif %}
-            {% if event['full_address'] %} {{ event['gmaps_url'] }} {% endif %}
-            {{ event['transcription']|highlight(event['event']['symptom']) }}
+            <div>-------------</div>
+            <div style="white-space: nowrap">
+                {{ event['datetime']|c('teal') }} - {{ event['responding']|c(event['station_color']) }}
+            </div>
+
+            <div>
+                {% if event['full_address'] %}
+                    <a href="event['gmaps_url']">{{ event['full_address']|c(event['vip_word_color']) }}</a>
+                {% elif event['event']['town'] %}
+                    {{ event['event']['town']|c(event['vip_word_color']) }}
+                {% elif event.address %}
+                    {{ event.address|c(event['vip_word_color']) }}
+                {% endif %}
+            </div>
+            <div>
+                {{ event['transcription']|highlight(event['event']['symptom']) }}
+            </div>
         {% endfor %}
     </body>
 </html>

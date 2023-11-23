@@ -17,7 +17,7 @@ except ImportError:
 
 
 def irc_color(value, color):
-    return f'<p style="font-color: {color}; white-space: nowrap;">{value}</p>'
+    return f'<span style="color: {color}; white-space: nowrap;">{value}</span>'
 
 
 def highlight(text, phrase):
@@ -67,7 +67,7 @@ def hello_world():
         if repeat_search:
             first = townsplit(repeat_search.group('first'), event['town'])
             repeat = townsplit(repeat_search.group('repeat'), event['town'])
-            transcription = '\n'.join([first, 'Repeating ' + repeat])
+            transcription = '<br>'.join([first, 'Repeating ' + repeat])
         else:
             transcription = townsplit(event['transcription'], event['town'])
 
@@ -82,7 +82,7 @@ def hello_world():
 
         if event['address'] and event['town']:
             full_address = f"{event['address']}, {event['town']}, NJ"
-            gmaps_url = f'https://www.google.com/maps/place/{quote_plus(full_address)}/data=!3m1!1e3'
+            gmaps_url = f'<a href=https://www.google.com/maps/place/{quote_plus(full_address)}/data=!3m1!1e3'
             payload['full_address'] = full_address
             payload['gmaps_url'] = gmaps_url
 
