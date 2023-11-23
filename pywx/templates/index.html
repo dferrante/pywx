@@ -1,0 +1,21 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                background-color: black;
+                font-family: monospace;
+                color: white;
+              }
+        </style>
+    <head>
+    <body>
+        {% for event in events %}
+            <p>-------------</p>
+            <div style="white-space: nowrap">asdf{{ event['datetime']|c('royal') }} - {{ event['responding']|c(event['station_color']) }} - {{ event['event']['id'] }}</div>
+            {% if event['full_address'] %} {{ event['full_address']|c(event['vip_word_color']) }} {% elif event['event']['town'] %} {{ event['event']['town']|c(event['vip_word_color']) }} {% elif event.address %} {{ event.address|c(event['vip_word_color']) }} {% endif %}
+            {% if event['full_address'] %} {{ event['gmaps_url'] }} {% endif %}
+            {{ event['transcription']|highlight(event['event']['symptom']) }}
+        {% endfor %}
+    </body>
+</html>
