@@ -18,13 +18,13 @@ import forecastio
 from . import base
 from .registry import register
 
-wind_directions = [(11.25, 'N'),(33.75, 'NNE'),(56.25, 'NE'),(78.75, 'ENE'),(101.25, 'E'),(123.75, 'ESE'),
-                   (146.25, 'SE'),(168.75, 'SSE'),(191.25, 'S'),(213.75, 'SSW'),(236.25, 'SW'),(258.75, 'WSW'),
-                   (281.25, 'W'),(303.75, 'WNW'),(326.25, 'NW'),(348.75, 'NNW'),(360, 'N')]
-hic = [0,-42.379,2.04901523,10.14333127,-0.22475541,-6.83783 * (10.0**-3.0),-5.481717 * (10.0**-2.0),1.22874 * (10.0**-3.0),8.5282 * (10.0**-4.0),-1.99 * (10.0**-6.0)]
+wind_directions = [(11.25, 'N'), (33.75, 'NNE'), (56.25, 'NE'), (78.75, 'ENE'), (101.25, 'E'), (123.75, 'ESE'),
+                   (146.25, 'SE'), (168.75, 'SSE'), (191.25, 'S'), (213.75, 'SSW'), (236.25, 'SW'), (258.75, 'WSW'),
+                   (281.25, 'W'), (303.75, 'WNW'), (326.25, 'NW'), (348.75, 'NNW'), (360, 'N')]
+hic = [0, -42.379, 2.04901523, 10.14333127, -0.22475541, -6.83783 * (10.0**-3.0), -5.481717 * (10.0**-2.0), 1.22874 * (10.0**-3.0), 8.5282 * (10.0**-4.0), -1.99 * (10.0**-6.0)]
 moon_phases = [
-    (0.0625, 'New'),(0.1875, 'Waxing Crescent'),(0.3125, 'First Quarter'),(0.4375, 'Waxing Gibbous'),(0.5625, 'Full'),
-    (0.6875, 'Waning Gibbous'),(0.8125, 'Last Quarter'),(0.9375, 'Waning Crescent'),(1, 'New'),
+    (0.0625, 'New'), (0.1875, 'Waxing Crescent'), (0.3125, 'First Quarter'), (0.4375, 'Waxing Gibbous'), (0.5625, 'Full'),
+    (0.6875, 'Waning Gibbous'), (0.8125, 'Last Quarter'), (0.9375, 'Waning Crescent'), (1, 'New'),
 ]
 
 
@@ -37,7 +37,7 @@ def first_greater_selector(i, lst):
 
 
 def hms(secs):
-    return ''.join([f'{n}{l}' for n,l in filter(lambda x: bool(x[0]), [(int(secs / 60 / 60), 'h'), (int(secs / 60 % 60), 'm'), (int(secs % 60 % 60), 's')])])
+    return ''.join([f'{n}{l}' for n, l in filter(lambda x: bool(x[0]), [(int(secs / 60 / 60), 'h'), (int(secs / 60 % 60), 'm'), (int(secs % 60 % 60), 's')])])
 
 
 def to_celcius(ftemp):
@@ -60,7 +60,7 @@ def heat_index(temp, hum):
     return round(hic[1] + (hic[2] * temp) + (hic[3] * hum) + (hic[4] * temp * hum) + (hic[5] * (temp**2)) + (hic[6] * (hum**2)) + (hic[7] * (temp**2) * hum) + (hic[8] * temp * (hum**2)) + (hic[9] * (temp**2) * (hum**2)), 1)
 
 
-def heat_index_si(temp,hum):
+def heat_index_si(temp, hum):
     return round(to_celcius(heat_index(to_fahrenheight(temp), hum)), 1)
 
 
@@ -104,7 +104,7 @@ spark_graph = list("▁▂▃▅▇")
 
 
 def alert_color(alert):
-    return ([c for m,c in alert_colors if m in alert['title'].lower()] or ['orange'])[0]
+    return ([c for m, c in alert_colors if m in alert['title'].lower()] or ['orange'])[0]
 
 
 Airport = collections.namedtuple('Airport', 'airport_id name city country faa icao lat long alt tz dst')
@@ -170,7 +170,7 @@ def spark_dewpoint(ctx, temps):
 
 @pass_context
 def spark_precip(_, precips):
-    graph_line_selector = list(zip([0,0.1,0.3,0.6,0.8,1], spark_graph)) + [(1, spark_graph[-1])]
+    graph_line_selector = list(zip([0, 0.1, 0.3, 0.6, 0.8, 1], spark_graph)) + [(1, spark_graph[-1])]
     graph = []
 
     for precip in precips:
@@ -238,11 +238,11 @@ class BaseWeather(base.Command):
 
     def match_location(self, username, location):
         name = ""
-        lat, lng = 0,0
+        lat, lng = 0, 0
         match = False
         location = ' '.join(location)
 
-        #db lookup
+        # db lookup
         if not location:
             user = self.usertable.find_one(user=username)
             if user and user['place'] and user['latitude'] and user['longitude']:
@@ -252,7 +252,7 @@ class BaseWeather(base.Command):
         if user and user['place'] and user['latitude'] and user['longitude']:
             return user['place'], user['latitude'], user['longitude']
 
-        #latlong
+        # latlong
         llmatch = re.compile(r'([0-9.-]+),([0-9.-]+)').match(location.lower())
         if llmatch:
             lat, lng = llmatch.groups()
@@ -407,7 +407,7 @@ class HourlyForecast(BaseWeather):
                 hour['precip_prob'] = 0
                 hour['precip_type'] = False
 
-            windspeed = hour_d.windSpeed if forecast.json['flags']['units'] != 'si' else hour_d.windSpeed * 3.6 #convert m/s to kph
+            windspeed = hour_d.windSpeed if forecast.json['flags']['units'] != 'si' else hour_d.windSpeed * 3.6 # convert m/s to kph
             hour['windspeed'] = f'{int(windspeed)}{units.wind} {first_greater_selector(hour_d.windBearing, wind_directions)}'
             if hour_d.windGust > 20 and units.wind == 'mph':
                 hour['windgust'] = int(round(hour_d.windGust))
@@ -467,7 +467,7 @@ class HourlySparkForecast(BaseWeather):
                 hour['precip_prob'] = 0
                 hour['precip_type'] = False
 
-            windspeed = hour_d.windSpeed if forecast.json['flags']['units'] != 'si' else hour_d.windSpeed * 3.6 #convert m/s to kph
+            windspeed = hour_d.windSpeed if forecast.json['flags']['units'] != 'si' else hour_d.windSpeed * 3.6 # convert m/s to kph
             hour['windspeed'] = f'{int(windspeed)}{units.wind} {first_greater_selector(hour_d.windBearing, wind_directions)}'
             hourlies.append(hour)
 
@@ -511,7 +511,7 @@ class CurrentWeather(BaseWeather):
         elif current.temperature > 26.6 and current.humidity > .4 and units.temp == "C":
             payload['heat_index'] = heat_index_si(current.temperature, current.humidity * 100)
 
-        windspeed = current.windSpeed if forecast.json['flags']['units'] != 'si' else current.windSpeed * 3.6 #convert m/s to kph
+        windspeed = current.windSpeed if forecast.json['flags']['units'] != 'si' else current.windSpeed * 3.6 # convert m/s to kph
         payload['windspeed'] = f'{int(windspeed)}{units.wind} {first_greater_selector(current.windBearing, wind_directions)}'
         if current.windGust > 20 and units.wind == 'mph':
             payload['windgust'] = int(round(current.windGust))
