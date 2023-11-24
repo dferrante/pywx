@@ -89,11 +89,13 @@ def parse_alerts():
             print("  - ", unit)
         print()
 
+        print('downloading...')
         local_filename = '/tmp/temp.mp3'
         with requests.get(event['mp3_url'], stream=True) as r:
             with open(local_filename, 'wb') as f:
                 shutil.copyfileobj(r.raw, f)
 
+        print('transcribing...')
         segments, _ = model.transcribe(local_filename, beam_size=5, vad_filter=True)
         transcription = []
         for segment in segments:
@@ -223,11 +225,16 @@ def parse_alerts():
     milemarker_regex = re.compile(r"mile marker[\s,]{,2}(?P<mile>\d+( over \d|\.\d)?)")
     exit_regex = re.compile(r"exit\s(number)?\s?(?P<exit>\d+)", re.I)
 
+    print('updating rows')
     update_rows = []
     for event in event_table.all():
         text = event['transcription']
         if not text:
             continue
+        text = re.sub(r"(don)+", 'don', text)
+        text = re.sub(r"(ton)+", 'don', text)
+        text = re.sub(r"(ington)+", 'ington', text)
+        text = re.sub(r"(ingdon)+", '', text)
         for correction, misspellings in spelling_correct.items():
             for misspelling in misspellings:
                 text = text.replace(misspelling, correction)
