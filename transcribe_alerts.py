@@ -78,6 +78,9 @@ def parse_alerts():
             event_table.insert(dict(county=event['county'], datetime=first_datetime, responding=responding, mp3_url=event['mp3_url'], is_transcribed=False, is_irc_notified=False))
 
     for event in event_table.find(is_transcribed=False, order_by=['datetime']):
+        if event['datetime'] < (datetime.datetime.now() - datetime.timedelta(days=5)):
+            print(f'event {event["id"]} too old, skipping')
+            continue
         print('ID:', event['id'])
         print('County:', event['county'])
         print('Date:', event['datetime'])
