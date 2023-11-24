@@ -1,4 +1,3 @@
-import argparse
 import datetime
 import json
 import os
@@ -11,12 +10,9 @@ import requests
 from faster_whisper import WhisperModel
 from sqlalchemy import Text
 
-parser = argparse.ArgumentParser()
-parser.add_argument("config_file", help="path to the config file")
-args = parser.parse_args()
 
 try:
-    config = json.load(open(args.config_file, encoding='utf-8'))
+    config = json.load(open('/data/local_config.json', encoding='utf-8'))
     config['pywx_path'] = os.path.dirname(os.path.abspath(__file__))
 except ImportError:
     print('cant import local_config.py')
@@ -26,7 +22,7 @@ except ImportError:
 def parse_alerts():
     print('starting transcription')
     database = dataset.connect(config['alerts_database'])
-    model = WhisperModel("large-v2", device="cpu", compute_type="int8")
+    model = WhisperModel("large-v2", device="cpu", compute_type="int8", download_root="/data/whisper")
     event_table = database['scanner']
     if 'transcription' not in event_table.columns:
         event_table.create_column('transcription', Text)
