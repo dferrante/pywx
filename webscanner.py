@@ -9,7 +9,7 @@ from flask import Flask
 from jinja2 import Environment
 
 try:
-    config = json.load(open('/data/local_config.json', encoding='utf-8'))
+    config = json.load(open('data/local_config.json', encoding='utf-8'))
     config['pywx_path'] = os.path.dirname(os.path.abspath(__file__))
 except ImportError:
     print('cant import local_config.py')
@@ -22,7 +22,7 @@ def irc_color(value, color):
 
 def highlight(text, phrase):
     if phrase:
-        return text.replace(phrase, irc_color(phrase, 'aqua'))
+        return text.replace(phrase, irc_color(phrase, '#b8ecf2'))
     return text
 
 
@@ -52,15 +52,15 @@ def hello_world():
     environment = Environment()
     environment.filters['c'] = irc_color
     environment.filters['tc'] = lambda v: irc_color(v, 'royal')
-    environment.filters['nc'] = lambda v: irc_color(v, 'orange')
+    environment.filters['nc'] = lambda v: irc_color(v, '#fa7516')
     environment.filters['highlight'] = highlight
 
     events = []
     for event in event_table.find(is_transcribed=True, order_by=['-datetime'], _limit=100):
         time = event['datetime'].strftime('%-I:%M%p')
         responding = ' - '.join([unit for unit in event['responding'].split(',')])
-        station_color = 'red' if any([station in event['responding'].lower() for station in important_stations]) else 'orange'
-        vip_word_color = 'yellow' if any([word in event['transcription'].lower() for word in important_words if word]) else 'royal'
+        station_color = 'red' if any([station in event['responding'].lower() for station in important_stations]) else '#fa7516'
+        vip_word_color = '#fa7516' if any([word in event['transcription'].lower() for word in important_words if word]) else 'royal'
         vip_word_color = 'red' if any([word in event['transcription'].lower() for word in very_important_words if word]) else vip_word_color
 
         repeat_search = repeating_regex.search(event['transcription'])

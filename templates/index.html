@@ -3,16 +3,19 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             body {
-                background-color: black;
+                background-color: #262626;
                 font-family: monospace;
-                color: white;
-              }
+                color: #cccccc;
+            }
+            a {
+                color: #3c99cf;
+            }
         </style>
     <head>
     <body>
         {% for event in events %}
             <div style="white-space: nowrap">
-                {{ event['datetime']|c('teal') }} - {{ event['responding']|c(event['station_color']) }} - <a href="{{ event['event']['mp3_url'] }}">mp3</a>
+                {{ event['datetime']|c('#a47fd4') }} - {{ event['responding']|c(event['station_color']) }} - <a href="{{ event['event']['mp3_url'] }}">mp3</a>
             </div>
 
             <div>
