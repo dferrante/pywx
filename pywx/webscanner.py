@@ -9,7 +9,7 @@ from flask import Flask
 from jinja2 import Environment
 
 try:
-    config = json.load(open('local_config.json', encoding='utf-8'))
+    config = json.load(open('/data/local_config.json', encoding='utf-8'))
     config['pywx_path'] = os.path.dirname(os.path.abspath(__file__))
 except ImportError:
     print('cant import local_config.py')
