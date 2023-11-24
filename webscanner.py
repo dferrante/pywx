@@ -17,7 +17,7 @@ except ImportError:
 
 
 def irc_color(value, color):
-    return f'<span style="color: {color}; white-space: nowrap;">{value}</span>'
+    return f'<span style="color: {color};">{value}</span>'
 
 
 def highlight(text, phrase):
