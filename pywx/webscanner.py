@@ -36,7 +36,7 @@ def townsplit(text, town):
     return text
 
 
-important_stations = ['45fire', '46fire', 'sbes']
+important_stations = ['45fire', '46fire', 'sbes', 'southbranch']
 very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west']
 important_words = ['clinton', 'annandale', 'school']
 
@@ -56,7 +56,7 @@ def hello_world():
     environment.filters['highlight'] = highlight
 
     events = []
-    for event in event_table.find(is_transcribed=True, order_by=['-datetime'], _limit=10):
+    for event in event_table.find(is_transcribed=True, order_by=['-datetime'], _limit=100):
         time = event['datetime'].strftime('%-I:%M%p')
         responding = ' - '.join([unit for unit in event['responding'].split(',')])
         station_color = 'red' if any([station in event['responding'].lower() for station in important_stations]) else 'orange'
@@ -82,7 +82,7 @@ def hello_world():
 
         if event['address'] and event['town']:
             full_address = f"{event['address']}, {event['town']}, NJ"
-            gmaps_url = f'<a href=https://www.google.com/maps/place/{quote_plus(full_address)}/data=!3m1!1e3'
+            gmaps_url = f'https://www.google.com/maps/place/{quote_plus(full_address)}/data=!3m1!1e3'
             payload['full_address'] = full_address
             payload['gmaps_url'] = gmaps_url
 
