@@ -57,8 +57,8 @@ def hello_world():
 
     events = []
     for event in event_table.find(is_transcribed=True, order_by=['-datetime'], _limit=100):
-        time = event['datetime'].strftime('%-I:%M%p')
-        responding = ' - '.join([unit for unit in event['responding'].split(',')])
+        time = event['datetime'].strftime('%m/%d %-I:%M%p')
+        responding = sorted(event['responding'].split(','))
         station_color = 'red' if any([station in event['responding'].lower() for station in important_stations]) else '#fa7516'
         vip_word_color = '#fa7516' if any([word in event['transcription'].lower() for word in important_words if word]) else 'royal'
         vip_word_color = 'red' if any([word in event['transcription'].lower() for word in very_important_words if word]) else vip_word_color

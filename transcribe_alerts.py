@@ -129,7 +129,7 @@ def parse_alerts():
         'Bloomsbury': ['Bluesberry'],
         'Branchburg': ['Bransford'],
         'Califon Borough': ['California Borough', 'Californ Borough', 'Califontine Borough', 'Caliphon Borough'],
-        'Clinton': ['Quentin', 'Caldwin'],
+        'Clinton': ['Quentin', 'Caldwin', 'Clindon'],
         'Clinton Township': ['Clint Township', 'Clayton Township', 'Clinton Tachib', 'Client Township', 'Clem Township'],
         'Croton': ['Croaten'],
         'Flemington': ['Flamington', 'Clemington', 'Plumbington', 'Wilmington', 'Bloomington Borough', 'Flem', 'Flamingo Borough', 'Fulmington'],
@@ -301,6 +301,7 @@ def parse_alerts():
 
     event_table.update_many(update_rows, ['id'])
     database.close()
+    print('done')
 
 
 if __name__ == '__main__':
