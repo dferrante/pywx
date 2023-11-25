@@ -5,7 +5,7 @@ import sys
 from urllib.parse import quote_plus
 
 import dataset
-from flask import Flask
+from flask import Flask, request
 from jinja2 import Environment
 
 try:
@@ -45,7 +45,7 @@ app = Flask(__name__)
 
 
 @app.route("/")
-def hello_world():
+def list():
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
 
@@ -55,8 +55,18 @@ def hello_world():
     environment.filters['nc'] = lambda v: irc_color(v, '#fa7516')
     environment.filters['highlight'] = highlight
 
+    event_query = []
+    if request.args.get('id'):
+        event_query = event_table.find(id=request.args['id'])
+    elif request.args.get('search'):
+        event_query = event_table.find(transcription={'ilike': f'%{request.args["search"]}%'}, is_transcribed=True, order_by=['-datetime'], _limit=100)
+    elif request.args.get('station'):
+        event_query = event_table.find(responding={'ilike': f'%{request.args["station"]}%'}, is_transcribed=True, order_by=['-datetime'], _limit=100)
+    else:
+        event_query = event_table.find(is_transcribed=True, order_by=['-datetime'], _limit=100)
+
     events = []
-    for event in event_table.find(is_transcribed=True, order_by=['-datetime'], _limit=100):
+    for event in event_query:
         time = event['datetime'].strftime('%m/%d %-I:%M%p')
         responding = sorted(event['responding'].split(','))
         station_color = 'red' if any([station in event['responding'].lower() for station in important_stations]) else '#fa7516'
@@ -95,4 +105,4 @@ def hello_world():
 
 
 if __name__ == '__main__':
-    print(hello_world())
+    print(list())
