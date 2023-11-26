@@ -6,6 +6,7 @@
                 background-color: #262626;
                 font-family: monospace;
                 color: #cccccc;
+                margin: 1em;
             }
             a.address {
                 color: #3c99cf;
@@ -13,45 +14,62 @@
             a:link {
                 text-decoration: none;
             }
-
             a:visited {
                 text-decoration: none;
             }
-
             a:hover {
                 text-decoration: underline;
             }
-
             a:active {
                 text-decoration: underline;
+            }
+            div.transcription {
+                margin-left: 2.5em;
+                margin-bottom: 1em;
+            }
+            div.responding {
+                margin: 1em;
+            }
+            a.datetime {
+                color: #a47fd4;
+                font-size: 120%;
             }
         </style>
     <head>
     <body>
         {% for event in events %}
-            <div style="white-space: nowrap">
-                <a href="?id={{ event['event']['id'] }}">{{ event['datetime']|c('#a47fd4') }}</a> - <a href="{{ event['event']['mp3_url'] }}">mp3</a>
+            <div>
+                <a class="datetime" href="?id={{ event['event']['id'] }}">{{ event['datetime'] }}</a>
+                 -
+                 <a href="{{ event['event']['mp3_url'] }}">{{ 'mp3'|c('#1b88b3') }}</a>
             </div>
 
-            {% for responding in event['responding'] %}
-                <div style="white-space: nowrap">
-                     - <a href="?station={{ responding }}">{{ responding|c(event['station_color']) }}</a>
+
+            <div class="responding">
+                <div>
+                    {% if event['full_address'] %}
+                        <a class="address" href="{{ event['gmaps_url'] }}">{{ event['full_address']|c(event['vip_word_color']) }}</a>
+                    {% elif event['event']['town'] %}
+                        {{ event['event']['town']|c(event['vip_word_color']) }}
+                    {% elif event.address %}
+                        {{ event.address|c('') }}
+                    {% endif %}
                 </div>
-            {% endfor %}
-
-            <div>
-                {% if event['full_address'] %}
-                    <a class="address" href="{{ event['gmaps_url'] }}">{{ event['full_address']|c(event['vip_word_color']) }}</a>
-                {% elif event['event']['town'] %}
-                    {{ event['event']['town']|c(event['vip_word_color']) }}
-                {% elif event.address %}
-                    {{ event.address|c(event['vip_word_color']) }}
-                {% endif %}
+                    {% for responding in event['responding'] %}
+                        <div style="white-space: nowrap">
+                            - <a href="?station={{ responding }}">{{ responding|station_highlight }}</a>
+                        </div>
+                    {% endfor %}
             </div>
-            <div>
+
+            <div class="transcription">
                 {{ event['transcription']|highlight(event['event']['symptom']) }}
             </div>
-            <div style="margin-bottom: 1em; margin-top: 1em;">-------------</div>
+
+            <div>
+            </div>
+
+            <div>-------------</div>
         {% endfor %}
     </body>
 </html>

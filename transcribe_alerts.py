@@ -8,7 +8,6 @@ import sys
 import dataset
 import requests
 from faster_whisper import WhisperModel
-from sqlalchemy import Text
 
 
 try:
@@ -22,10 +21,7 @@ except ImportError:
 def parse_alerts():
     print('starting transcription')
     database = dataset.connect(config['alerts_database'])
-    model = WhisperModel("large-v2", device="cpu", compute_type="int8", download_root="data/whisper")
     event_table = database['scanner']
-    if 'transcription' not in event_table.columns:
-        event_table.create_column('transcription', Text)
 
     mp3s = []
 
@@ -77,6 +73,7 @@ def parse_alerts():
             print('inserting', event['mp3_url'])
             event_table.insert(dict(county=event['county'], datetime=first_datetime, responding=responding, mp3_url=event['mp3_url'], is_transcribed=False, is_irc_notified=False))
 
+    model = WhisperModel("large-v2", device="cpu", compute_type="int8", download_root="data/whisper")
     for event in event_table.find(is_transcribed=False, order_by=['datetime']):
         if event['datetime'] < (datetime.datetime.now() - datetime.timedelta(days=5)):
             print(f'event {event["id"]} too old, skipping')
@@ -172,7 +169,7 @@ def parse_alerts():
         'syncopal episode': ['single episode', 'sinkhole episode'],
         'syncope': ['synchro'],
         'vomiting': ['abominate'],
-        'Town of Clinton': ['town of Clinton'],
+        'Town of Clinton': ['town of Clinton', 'Santa Clinton'],
         'Shop Rite': ['shop right'],
         'CO2 alarm': ['seal alarm'],
         'fire alarm activation': ['firearm activation']
@@ -263,6 +260,9 @@ def parse_alerts():
             if location_match:
                 event['town'] = location_match.group('town')
                 break
+
+        if event['town']:
+            event['town'] = event['town'].replace('Town of', '').replace('City of', '')
 
         route78_match = route78_regex.search(text)
         if route78_match:

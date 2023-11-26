@@ -8,6 +8,8 @@ import dataset
 from flask import Flask, request
 from jinja2 import Environment
 
+app = Flask(__name__)
+
 try:
     config = json.load(open('data/local_config.json', encoding='utf-8'))
     config['pywx_path'] = os.path.dirname(os.path.abspath(__file__))
@@ -15,18 +17,14 @@ except ImportError:
     print('cant import local_config.py')
     sys.exit()
 
+repeating_regex = re.compile(r"(?P<first>.*)(Repeating|repeating|Paging)[\s.,]+(?P<repeat>.*)")
+important_stations = ['45fire', '46fire', 'sbes', 'southbranch']
+very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west', 'norma']
+important_words = ['clinton', 'annandale', 'school']
+
 
 def irc_color(value, color):
     return f'<span style="color: {color};">{value}</span>'
-
-
-def highlight(text, phrase):
-    if phrase:
-        return text.replace(phrase, irc_color(phrase, '#b8ecf2'))
-    return text
-
-
-repeating_regex = re.compile(r"(?P<first>.*)(Repeating|repeating|Paging)[\s.,]+(?P<repeat>.*)")
 
 
 def townsplit(text, town):
@@ -36,14 +34,6 @@ def townsplit(text, town):
     return text
 
 
-important_stations = ['45fire', '46fire', 'sbes', 'southbranch']
-very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west']
-important_words = ['clinton', 'annandale', 'school']
-
-
-app = Flask(__name__)
-
-
 @app.route("/")
 def list():
     database = dataset.connect(config['alerts_database'])
@@ -51,9 +41,8 @@ def list():
 
     environment = Environment()
     environment.filters['c'] = irc_color
-    environment.filters['tc'] = lambda v: irc_color(v, 'royal')
-    environment.filters['nc'] = lambda v: irc_color(v, '#fa7516')
-    environment.filters['highlight'] = highlight
+    environment.filters['highlight'] = lambda text, phrase: text.replace(phrase, irc_color(phrase, '#b8ecf2')) if phrase else text
+    environment.filters['station_highlight'] = lambda station: irc_color(station, 'red') if any([important_station in station.lower() for important_station in important_stations]) else irc_color(station, '#fa7516')
 
     event_query = []
     if request.args.get('id'):
@@ -69,8 +58,7 @@ def list():
     for event in event_query:
         time = event['datetime'].strftime('%m/%d %-I:%M%p')
         responding = sorted(event['responding'].split(','))
-        station_color = 'red' if any([station in event['responding'].lower() for station in important_stations]) else '#fa7516'
-        vip_word_color = '#fa7516' if any([word in event['transcription'].lower() for word in important_words if word]) else 'royal'
+        vip_word_color = '#fa7516' if any([word in event['transcription'].lower() for word in important_words if word]) else '#3c99cf'
         vip_word_color = 'red' if any([word in event['transcription'].lower() for word in very_important_words if word]) else vip_word_color
 
         repeat_search = repeating_regex.search(event['transcription'])
@@ -86,7 +74,6 @@ def list():
             'responding': responding,
             'vip_word_color': vip_word_color,
             'transcription': transcription,
-            'station_color': station_color,
             'event': event,
         }
 
