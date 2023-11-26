@@ -89,7 +89,3 @@ def list():
     reply = template.render({'events': events})
 
     return reply
-
-
-if __name__ == '__main__':
-    print(list())

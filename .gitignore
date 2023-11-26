@@ -13,3 +13,4 @@ local_config.*
 .python-version
 *.vscode*
 whisper*
+*.pem
