@@ -15,6 +15,7 @@ RUN python -V && pip install --no-cache-dir -r requirements.txt
 COPY forecastio forecastio/
 COPY modules modules/
 COPY templates templates/
+COPY static static/
 COPY airports.dat acro.json __init__.py pythabot.py pywx.py transcribe_alerts.py webscanner.py ./
 
 # setup supervisord
