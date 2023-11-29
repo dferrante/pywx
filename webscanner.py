@@ -5,8 +5,8 @@ import sys
 from urllib.parse import quote_plus
 
 import dataset
-from flask import Flask, request
-from jinja2 import Environment
+from flask import Flask, render_template, request, send_from_directory
+from markupsafe import Markup
 
 app = Flask(__name__)
 
@@ -24,7 +24,7 @@ important_words = ['clinton', 'annandale', 'school']
 
 
 def irc_color(value, color):
-    return f'<span style="color: {color};">{value}</span>'
+    return Markup(f'<span style="color: {color};">{value}</span>')
 
 
 def townsplit(text, town):
@@ -39,9 +39,9 @@ def list():
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
 
-    environment = Environment()
+    environment = app.jinja_env
     environment.filters['c'] = irc_color
-    environment.filters['highlight'] = lambda text, phrase: text.replace(phrase, irc_color(phrase, '#b8ecf2')) if phrase else text
+    environment.filters['highlight'] = lambda text, phrase: Markup(text.replace(phrase, irc_color(phrase, '#b8ecf2'))) if phrase else text
     environment.filters['station_highlight'] = lambda station: irc_color(station, 'red') if any([important_station in station.lower() for important_station in important_stations]) else irc_color(station, '#fa7516')
 
     event_query = []
@@ -85,7 +85,9 @@ def list():
 
         events.append(payload)
 
-    template = environment.from_string(open('templates/index.html').read())
-    reply = template.render({'events': events})
+    return render_template('index.html', events=events)
 
-    return reply
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
