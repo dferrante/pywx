@@ -41,7 +41,7 @@ def list():
 
     environment = app.jinja_env
     environment.filters['c'] = irc_color
-    environment.filters['highlight'] = lambda text, phrase: Markup(text.replace(phrase, irc_color(phrase, '#b8ecf2'))) if phrase else text
+    environment.filters['highlight'] = lambda text, phrase: text.replace(phrase, irc_color(phrase, '#b8ecf2')) if phrase else text
     environment.filters['station_highlight'] = lambda station: irc_color(station, 'red') if any([important_station in station.lower() for important_station in important_stations]) else irc_color(station, '#fa7516')
 
     event_query = []
@@ -73,7 +73,7 @@ def list():
             'datetime': time,
             'responding': responding,
             'vip_word_color': vip_word_color,
-            'transcription': transcription,
+            'transcription': Markup(transcription),
             'event': event,
         }
 
