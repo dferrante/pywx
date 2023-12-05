@@ -149,7 +149,8 @@ def parse_alerts():
             'where to Township', "we're in Township", 'route in Township', 'Aaron Township', 'Arrington Township', 'Barrington Township', 'Burrington Township',
             'Barret Township', 'Brereton Township', 'Rarity Township', 'Rarit Township', 'rear end tangent', 'ready to Township', 'ready to township',
             'rare in a township', 'rare in town', 'rare in township', 'route and attach', 'route attached', 'Barrett Township', 'American Township',
-            'Arlington Township', 'Arroyo Township', 'Awareness Township', 'Burn Township', 'Byrne Township', 'Rarit Township', 'Ericsson Township'
+            'Arlington Township', 'Arroyo Township', 'Awareness Township', 'Burn Township', 'Byrne Township', 'Rarit Township', 'Ericsson Township',
+            'Verridon Township', 'at Township'
         ],
         'Readington': ['Reddington', 'Ridington', 'Redd'],
         'Readington Township': ['responding to Township', 'running to Township', 'routing to Township', 'riding to Township', 'right on Township', 'Read Township', 'Reed Township'],
