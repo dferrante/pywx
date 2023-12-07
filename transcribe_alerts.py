@@ -142,6 +142,7 @@ def parse_alerts():
                          'Lamberthill', 'Lamberthville', 'Laramieville', 'Lambeau', 'Lambeauville', 'Lamberphil', 'Lamberthal', 'Land Revolt', 'Landville', ],
         'Lebanon Township': ['11 on Township', '111 on Township', '11 to Township', 'Leavett on Township', '11 Township'],
         'Lopatcong': ['Lopatkin'],
+        'Oldwick': ['Old Wick'],
         'Paging': ['Puging'],
         'Pittstown': ['Pitsdown', 'Pitstown'],
         'Raritan': ['Rareton', 'Renton'],
