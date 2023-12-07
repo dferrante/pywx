@@ -167,7 +167,7 @@ def parse_alerts():
         'leg pain': ['Lake Payne'],
         'lift assist': ['left assist', 'Leipzig'],
         'responding': ['spawning'],
-        'syncopal': ['sinkable', 'sickable', 'singapore', 'Singapore', 'syncable'],
+        'syncopal': ['sinkable', 'sickable', 'singapore', 'Singapore', 'syncable', 'thinkable'],
         'syncopal episode': ['single episode', 'sinkhole episode'],
         'syncope': ['synchro'],
         'vomiting': ['abominate'],
