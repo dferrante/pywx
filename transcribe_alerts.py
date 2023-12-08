@@ -144,7 +144,7 @@ def parse_alerts():
         'Lopatcong': ['Lopatkin'],
         'Oldwick': ['Old Wick'],
         'Paging': ['Puging'],
-        'Pittstown': ['Pitsdown', 'Pitstown'],
+        'Pittstown': ['Pitsdown', 'Pitstown', 'Pitts Town'],
         'Raritan': ['Rareton', 'Renton'],
         'Raritan Township': [
             'where to Township', "we're in Township", 'route in Township', 'Aaron Township', 'Arrington Township', 'Barrington Township', 'Burrington Township',
