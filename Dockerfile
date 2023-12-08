@@ -20,7 +20,7 @@ COPY airports.dat acro.json __init__.py pythabot.py pywx.py transcribe_alerts.py
 
 # setup supervisord
 RUN mkdir -p /var/log/supervisor
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY supervisord.conf /supervisord.conf
 COPY nginx.conf /etc/nginx/sites-available/default
 
 # Latest releases available at https://github.com/aptible/supercronic/releases
@@ -37,4 +37,4 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
 RUN echo '*/5 * * * * python transcribe_alerts.py ' > /crontab
 RUN supercronic -test /crontab
 
-CMD ["/usr/bin/supervisord"]
+CMD ["/usr/bin/supervisord", "-c", "/supervisord.conf"]
