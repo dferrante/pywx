@@ -10,6 +10,8 @@ import dataset
 import requests
 from faster_whisper import WhisperModel
 
+from spelling_correct import spelling_correct
+
 
 try:
     config = json.load(open('data/local_config.json', encoding='utf-8'))
@@ -115,89 +117,10 @@ def parse_alerts():
         'ten': 10,
     }
     text_ages = '|'.join(age_to_int.keys())
-    spelling_correct = {
-        'Alexandria Township': ['Alexander Township'],
-        'Amwell': ['AML', 'Enwood', 'Danwell', 'End West', 'Amel', 'Seminole', 'Sandwell', 'Humbolt', 'Stanwell', 'Amarillo'],
-        'West Amwell': ['West Elmwood', 'West Emerald', 'West Hamilton', 'West Hamlet', 'West Hamlin'],
-        'Amwell Township': ['Ammo', 'Amo Township', 'Animal Township', 'Antelope Township'],
-        'Barley Sheaf': ['Barley Sheep', 'Barley Chief'],
-        'Bethlehem': ['SLAM'],
-        'Bethlehem Township': ['Bethlehem Tech'],
-        'Bloomsbury': ['Bluesberry'],
-        'Branchburg': ['Bransford'],
-        'Califon Borough': ['California Borough', 'Californ Borough', 'Califontine Borough', 'Caliphon Borough'],
-        'Clinton': ['Quentin', 'Caldwin', 'Clindon'],
-        'Clinton Township': ['Clint Township', 'Clayton Township', 'Clinton Tachib', 'Client Township', 'Clem Township'],
-        'Croton': ['Croaten'],
-        'Flemington': ['Flamington', 'Clemington', 'Plumbington', 'Wilmington', 'Bloomington Borough', 'Flem', 'Flamingo Borough', 'Fulmington', 'Plummedon', 'Plumb'],
-        'Frenchtown': ['French Town'],
-        'Glen Gardner': ['Glenn Gardener', 'Glen Garner', 'Glengardner'],
-        'High Bridge': ['Highbridge', 'highbridge'],
-        'High Bridge Borough': ['Hybridsboro'],
-        'Hunterdon': ['Huntingdon', 'Hunter', 'Hunterdondon'],
-        'Hunterdon Care Center': ['Hunter and Care Center', 'Hunterdon and Care Center', 'Hunter Care Center'],
-        'Kingwood Township': ['with Township', 'Kenwood Township'],
-        'Lambertville': ['Lambeville', 'Lamerill', 'Lamberville', 'Lamerville', 'Laramville', 'Limberville', "Lamarville", 'Lambauville', 'Lumberphil',
-                         'Lamberthill', 'Lamberthville', 'Laramieville', 'Lambeau', 'Lambeauville', 'Lamberphil', 'Lamberthal', 'Land Revolt', 'Landville', ],
-        'Lebanon Township': ['11 on Township', '111 on Township', '11 to Township', 'Leavett on Township', '11 Township'],
-        'Lopatcong': ['Lopatkin'],
-        'Oldwick': ['Old Wick'],
-        'Paging': ['Puging'],
-        'Pittstown': ['Pitsdown', 'Pitstown', 'Pitts Town'],
-        'Raritan': ['Rareton', 'Renton'],
-        'Raritan Township': [
-            'where to Township', "we're in Township", 'route in Township', 'Aaron Township', 'Arrington Township', 'Barrington Township', 'Burrington Township',
-            'Barret Township', 'Brereton Township', 'Rarity Township', 'Rarit Township', 'rear end tangent', 'ready to Township', 'ready to township',
-            'rare in a township', 'rare in town', 'rare in township', 'route and attach', 'route attached', 'Barrett Township', 'American Township',
-            'Arlington Township', 'Arroyo Township', 'Awareness Township', 'Burn Township', 'Byrne Township', 'Rarit Township', 'Ericsson Township',
-            'Verridon Township', 'at Township'
-        ],
-        'Readington': ['Reddington', 'Ridington', 'Redd'],
-        'Readington Township': ['responding to Township', 'running to Township', 'routing to Township', 'riding to Township', 'right on Township', 'Read Township', 'Reed Township'],
-        'Township': ['Tach', 'Tash', 'Tadge', 'Tatchett'],
-        'Repeating': ['Skiing', 'Reading '],
-        'Responding': ['Spawning'],
-        'Route 78': ['route 70'],
-        'Tewksbury': ['Tewsbury', 'Chiefsbury'],
-        'Tewksbury Township': ['123 Township'],
-        'Walter Foran': ['Walter Farran'],
-        'chest pain': ['Chesepeake', 'Chesapine'],
-        'described': ['ascribed'],
-        'fall victim': ['full victim'],
-        'leg pain': ['Lake Payne'],
-        'lift assist': ['left assist', 'Leipzig'],
-        'responding': ['spawning'],
-        'syncopal': ['sinkable', 'sickable', 'singapore', 'Singapore', 'syncable', 'thinkable'],
-        'syncopal episode': ['single episode', 'sinkhole episode'],
-        'syncope': ['synchro'],
-        'vomiting': ['abominate'],
-        'Town of Clinton': ['town of Clinton', 'Santa Clinton'],
-        'Shop Rite': ['shop right'],
-        'CO2 alarm': ['seal alarm'],
-        'fire alarm activation': ['firearm activation']
-    }
 
     street_types = [
-        'Street',
-        'Road',
-        'Lane',
-        'Drive',
-        'Avenue',
-        'Court',
-        'Blvd',
-        'Boulevard',
-        'Highway',
-        'Circle',
-        'Way',
-        'Plaza',
-        'Hillway',
-        'Pass',
-        'Pike',
-        'Plaza',
-        'Crestway',
-        'Place',
-        'Terrace',
-        'Ridge'
+        'Street', 'Road', 'Lane', 'Drive', 'Avenue', 'Court', 'Blvd', 'Boulevard', 'Highway', 'Circle', 'Way', 'Plaza', 'Hillway',
+        'Pass', 'Pike', 'Plaza', 'Crestway', 'Place', 'Terrace', 'Ridge'
     ]
     street_types += [s.lower() for s in street_types]
     street_types = '|'.join(street_types)
