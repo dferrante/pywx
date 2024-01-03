@@ -1,69 +1,15 @@
-<html>
-    <head>
-        <title>Fire/EMS Alerts</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+{% extends "base.html" %}
 
-        <style>
-            body {
-                background-color: #262626;
-                font-family: monospace;
-                color: #cccccc;
-                margin: 1em;
-            }
-            a.address {
-                color: #3c99cf;
-            }
-            a:link {
-                text-decoration: none;
-            }
-            a:visited {
-                text-decoration: none;
-            }
-            a:hover {
-                text-decoration: underline;
-            }
-            a:active {
-                text-decoration: underline;
-            }
-            div.transcription {
-                margin-left: 2.5em;
-                margin-bottom: 1em;
-            }
-            div.responding {
-                margin: 1em;
-            }
-            a.datetime {
-                color: #a47fd4;
-                font-size: 120%;
-            }
-            form.search {
-                display: inline;
-            }
-        </style>
-    <head>
-    <body>
-        <div>
-            {% for county in counties %}
-                <a href="{% if request.args.get('county') == county %}/{% else %}?county={{ county }}{% endif %}">
-                    {% if request.args.get('county') == county %}<span style="color: #fa7516">{% endif %}{{ county }}{% if request.args.get('county') == county %}</span>{% endif %}
-                </a>
-                {% if loop.revindex != 1 %} - {% endif %}
-            {% endfor %}
-             |
-            <a href="/stations">station list</a>
-             |
-            search: <form class="search"><input type="text" id="search" name="search" {% if request.args.get('search') %}value="{{ request.args.search }}"{% endif %}></form>
-        <div>
-        <br>
-        {% for county in counties %}
-            <b>{{ county }}:</b><br>
-            {% for station in county_station[county] %}
-                <a href="/?station={{ station }}">
-                    {{ station }}
-                </a><br>
-            {% endfor %}
-            <br>
+{% block title %}Fire/EMS Alerts - Station List{% endblock %}
+
+{% block body %}
+    {% for county in counties %}
+        <b>{{ county }}:</b><br>
+        {% for station in county_station[county] %}
+            <a href="/?station={{ station }}">
+                {{ station }}
+            </a><br>
         {% endfor %}
-    </body>
-</html>
+        <br>
+    {% endfor %}
+{% endblock %}

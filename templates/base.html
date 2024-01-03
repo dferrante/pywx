@@ -1,0 +1,79 @@
+<html>
+    <head>
+        <title>{% block title %}Fire/EMS Alerts{% endblock %}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+        <meta http-equiv="refresh" content="60" />
+
+        <style>
+            body {
+                background-color: #262626;
+                font-family: monospace;
+                color: #cccccc;
+                margin: 1em;
+            }
+            a.address {
+                color: #3c99cf;
+            }
+            a:link {
+                color: #3c99cf;
+                text-decoration: none;
+            }
+            a:visited {
+                color: #3c99cf;
+                text-decoration: none;
+            }
+            a:hover {
+                text-decoration: underline;
+            }
+            a:active {
+                text-decoration: underline;
+            }
+            div.transcription {
+                margin-left: 2.5em;
+                margin-bottom: 1em;
+            }
+            div.responding {
+                margin: 1em;
+            }
+            a.datetime {
+                color: #a47fd4;
+                font-size: 120%;
+            }
+            form.search {
+                display: inline;
+            }
+            input[type=text] {
+                background-color: #262626;
+                border: 1px solid white;
+                color: white;
+            }
+        </style>
+    <head>
+    <body>
+        <div>
+            <a href="/">
+                <span style="color: {% if request.args.get('county') == None %}#fa7516{% else %}#3c99cf{% endif %}">all</span>
+            </a> -
+            {% for county in counties %}
+                <a href="{% if request.args.get('county') == county %}/{% else %}/?county={{ county }}{% endif %}">
+                    {% if request.args.get('county') == county %}<span style="color: #fa7516">{% endif %}{{ county }}{% if request.args.get('county') == county %}</span>{% endif %}
+                </a>
+                {% if loop.revindex != 1 %} - {% endif %}
+            {% endfor %}
+             |
+            <a href="/stations">
+                {% if request.path == '/stations' %}<span style="color: #fa7516">{% endif %}station list{% if request.path == '/stations' %}</span>{% endif %}</a>
+            {% if request.args.get('station') %}<span style="color: #fa7516">[{{ request.args.get('station') }}]</span>{% endif %}
+             |
+            search:
+            <form class="search" action="/">
+                <input type="text" id="search" name="search" {% if request.args.get('search') %}value="{{ request.args.search }}"{% endif %}>
+                {% if request.args.get('station') %}<input type="hidden" name="station" value="{{ request.args.get('station') }}">{% endif %}
+                {% if request.args.get('county') %}<input type="hidden" name="county" value="{{ request.args.get('county') }}">{% endif %}
+            ></form>
+        <div>
+        <br>
+        {% block body %}{% endblock %}
+    </body>
+</html>
