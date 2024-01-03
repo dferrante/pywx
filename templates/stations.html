@@ -3,7 +3,6 @@
         <title>Fire/EMS Alerts</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-        <meta http-equiv="refresh" content="60" />
 
         <style>
             body {
@@ -53,44 +52,18 @@
             {% endfor %}
              |
             <a href="/stations">station list</a>
-            {% if request.args.get('station') %}<span style="color: #fa7516">[{{ request.args.get('station') }}]</span>{% endif %}
              |
             search: <form class="search"><input type="text" id="search" name="search" {% if request.args.get('search') %}value="{{ request.args.search }}"{% endif %}></form>
         <div>
         <br>
-        {% for event in events %}
-            <div>
-                <a class="datetime" href="?id={{ event['event']['id'] }}">{{ event['datetime'] }}</a>
-                 -
-                 <a href="{{ event['event']['mp3_url'] }}" target="_blank" rel="noopener noreferrer">{{ 'mp3'|c('#1b88b3') }}</a>
-            </div>
-
-
-            <div class="responding">
-                <div>
-                    {% if event['full_address'] %}
-                        <a class="address" href="{{ event['gmaps_url'] }}" target="_blank" rel="noopener noreferrer">{{ event['full_address']|c(event['vip_word_color']) }}</a>
-                    {% elif event['event']['town'] %}
-                        {{ event['event']['town']|c(event['vip_word_color']) }}
-                    {% elif event.address %}
-                        {{ event.address|c('') }}
-                    {% endif %}
-                </div>
-                    {% for responding in event['responding'] %}
-                        <div style="white-space: nowrap">
-                            - <a href="?station={{ responding }}">{{ responding|station_highlight }}</a>
-                        </div>
-                    {% endfor %}
-            </div>
-
-            <div class="transcription">
-                {{ event['transcription']|highlight(event['event']['symptom']) }}
-            </div>
-
-            <div>
-            </div>
-
-            <div>-------------</div>
+        {% for county in counties %}
+            <b>{{ county }}:</b><br>
+            {% for station in county_station[county] %}
+                <a href="/?station={{ station }}">
+                    {{ station }}
+                </a><br>
+            {% endfor %}
+            <br>
         {% endfor %}
     </body>
 </html>

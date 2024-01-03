@@ -1,3 +1,4 @@
+import collections
 import json
 import os
 import re
@@ -21,6 +22,8 @@ repeating_regex = re.compile(r"(?P<first>.*)(Repeating|repeating|Paging)[\s.,]+(
 important_stations = ['45fire', '46fire', 'sbes', 'southbranch']
 very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west', 'norma']
 important_words = ['clinton', 'annandale', 'school']
+
+counties = ['hunterdon', 'warren', 'morris', 'sussex']
 
 
 def irc_color(value, color):
@@ -47,12 +50,20 @@ def list():
     event_query = []
     if request.args.get('id'):
         event_query = event_table.find(id=request.args['id'])
-    elif request.args.get('search'):
-        event_query = event_table.find(transcription={'ilike': f'%{request.args["search"]}%'}, is_transcribed=True, order_by=['-datetime'], _limit=100)
-    elif request.args.get('station'):
-        event_query = event_table.find(responding={'ilike': f'%{request.args["station"]}%'}, is_transcribed=True, order_by=['-datetime'], _limit=100)
     else:
-        event_query = event_table.find(is_transcribed=True, order_by=['-datetime'], _limit=100)
+        default_search = {
+            'is_transcribed': True,
+            'order_by': ['-datetime'],
+            '_limit': 100
+        }
+        if request.args.get('search'):
+            default_search['transcription'] = {'ilike': f'%{request.args["search"]}%'}
+        if request.args.get('station'):
+            default_search['responding'] = {'ilike': f'%{request.args["station"]}%'}
+        if request.args.get('county'):
+            default_search['county'] = {'ilike': f'%{request.args["county"]}%'}
+
+        event_query = event_table.find(**default_search)
 
     events = []
     for event in event_query:
@@ -85,7 +96,23 @@ def list():
 
         events.append(payload)
 
-    return render_template('index.html', events=events)
+    return render_template('index.html', events=events, counties=counties, request=request)
+
+
+@app.route('/stations')
+def stations():
+    database = dataset.connect(config['alerts_database'])
+    event_table = database['scanner']
+
+    county_station = collections.defaultdict(set)
+    for event in event_table.all():
+        for station in event['responding'].split(','):
+            county_station[event['county']].add(station.strip())
+
+    for county in county_station:
+        county_station[county] = sorted(county_station[county])
+
+    return render_template('stations.html', county_station=county_station, counties=counties)
 
 
 @app.route('/favicon.ico')
