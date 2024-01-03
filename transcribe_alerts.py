@@ -24,7 +24,7 @@ def parse_alerts():
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
 
-    for county in ['hunterdon', 'morris', 'sussex', 'warren']:
+    for county in ['hunterdon', 'morris', 'warren']:
         mp3s = []
         alerts_url = f'https://dispatchalert.group//includes/js/flat.audio.{county}.js'
         resp = requests.get(alerts_url)
@@ -38,7 +38,7 @@ def parse_alerts():
         last_event_date = None
         group_in_seconds = 30
         for mp3_url in mp3s:
-            parsed_url = re.search(r"https://dispatchalert.net/(?P<county>[^/]+)/(?P<unit>[^/_]+)_(?P<datetime>[\d_]+).mp3", mp3_url).groupdict()
+            parsed_url = re.search(r"https://dispatchalert.net/(?P<county>[^/]+)/(?P<unit>[^/_]+)__?(?P<datetime>[\d_]+).mp3", mp3_url).groupdict()
             parsed_url['unit'] = ' '.join(parsed_url['unit'].split('-'))
             parsed_url['mp3_url'] = mp3_url
             parsed_url['datetime'] = datetime.datetime.strptime(parsed_url['datetime'], "%Y_%m_%d_%H_%M_%S")
