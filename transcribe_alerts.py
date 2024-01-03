@@ -1,3 +1,4 @@
+import collections
 import datetime
 import json
 import os
@@ -23,61 +24,59 @@ def parse_alerts():
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
 
-    mp3s = []
+    for county in ['hunterdon', 'morris', 'sussex', 'warren']:
+        mp3s = []
+        alerts_url = f'https://dispatchalert.group//includes/js/flat.audio.{county}.js'
+        resp = requests.get(alerts_url)
+        for raw_line in resp.iter_lines():
+            line = raw_line.decode('ascii').strip()
+            if 'mp3:' in line:
+                mp3s.append(line[6:-1])
 
-    alerts_url = 'https://dispatchalert.group//includes/js/flat.audio.hunterdon.js'
-    resp = requests.get(alerts_url)
-    for raw_line in resp.iter_lines():
-        line = raw_line.decode('ascii').strip()
-        if 'mp3:' in line:
-            mp3s.append(line[6:-1])
+        grouped_events = []
+        event = []
+        last_event_date = None
+        group_in_seconds = 30
+        for mp3_url in mp3s:
+            parsed_url = re.search(r"https://dispatchalert.net/(?P<county>[^/]+)/(?P<unit>[^/_]+)_(?P<datetime>[\d_]+).mp3", mp3_url).groupdict()
+            parsed_url['unit'] = ' '.join(parsed_url['unit'].split('-'))
+            parsed_url['mp3_url'] = mp3_url
+            parsed_url['datetime'] = datetime.datetime.strptime(parsed_url['datetime'], "%Y_%m_%d_%H_%M_%S")
 
-    # alerts_url = 'https://dispatchalert.group//includes/js/flat.audio.warren.js'
-    # resp = requests.get(alerts_url)
-    # for raw_line in resp.iter_lines():
-    #     line = raw_line.decode('ascii').strip()
-    #     if 'mp3:' in line:
-    #         mp3s.append(line[6:-1])
+            seconds_since_last_event = (last_event_date - parsed_url['datetime']).total_seconds() if last_event_date else group_in_seconds - 1
+            if seconds_since_last_event > group_in_seconds:
+                if event:
+                    grouped_events.append(event)
+                event = [parsed_url]
+            else:
+                event.append(parsed_url)
 
-    grouped_events = []
-    event = []
-    last_event_date = None
-    group_in_seconds = 30
-    for mp3_url in mp3s:
-        parsed_url = re.search(r"https://dispatchalert.net/(?P<county>[^/]+)/(?P<unit>[^/_]+)_(?P<datetime>[\d_]+).mp3", mp3_url).groupdict()
-        parsed_url['unit'] = ' '.join(parsed_url['unit'].split('-'))
-        parsed_url['mp3_url'] = mp3_url
-        parsed_url['datetime'] = datetime.datetime.strptime(parsed_url['datetime'], "%Y_%m_%d_%H_%M_%S")
+            last_event_date = parsed_url['datetime']
 
-        seconds_since_last_event = (last_event_date - parsed_url['datetime']).total_seconds() if last_event_date else group_in_seconds - 1
-        if seconds_since_last_event > group_in_seconds:
-            if event:
-                grouped_events.append(event)
-            event = [parsed_url]
-        else:
-            event.append(parsed_url)
+        for group in grouped_events:
+            event = group[0]
+            first_datetime = min([e['datetime'] for e in group])
+            responding = ','.join(sorted([e['unit'] for e in group]))
 
-        last_event_date = parsed_url['datetime']
+            existing_event = event_table.find_one(county=event['county'], datetime=first_datetime)
+            if existing_event:
+                if responding != existing_event['responding']:
+                    print('updating', existing_event['mp3_url'])
+                    event_table.update(dict(responding=responding, id=existing_event['id']), ['id'])
+            else:
+                print('inserting', event['mp3_url'])
+                event_table.insert(dict(county=event['county'], datetime=first_datetime, responding=responding, mp3_url=event['mp3_url'], is_transcribed=False, is_irc_notified=False))
 
-    for group in grouped_events:
-        event = group[0]
-        first_datetime = min([e['datetime'] for e in group])
-        responding = ','.join(sorted([e['unit'] for e in group]))
-
-        existing_event = event_table.find_one(county=event['county'], datetime=first_datetime)
-        if existing_event:
-            if responding != existing_event['responding']:
-                print('updating', existing_event['mp3_url'])
-                event_table.update(dict(responding=responding, id=existing_event['id']), ['id'])
-        else:
-            print('inserting', event['mp3_url'])
-            event_table.insert(dict(county=event['county'], datetime=first_datetime, responding=responding, mp3_url=event['mp3_url'], is_transcribed=False, is_irc_notified=False))
-
+    county_count = collections.defaultdict(int)
     model = WhisperModel("large-v2", device="cpu", compute_type="int8", download_root="data/whisper")
     for event in event_table.find(is_transcribed=False, order_by=['datetime']):
-        if event['datetime'] < (datetime.datetime.now() - datetime.timedelta(days=5)):
+        if event['datetime'] < (datetime.datetime.now() - datetime.timedelta(days=5)) and event['county'] == 'hunterdon':
             print(f'event {event["id"]} too old, skipping')
             continue
+        if event['county'] != 'hunterdon':
+            county_count[event['county']] += 1
+            if county_count[event['county']] > 2:
+                continue
         print('ID:', event['id'])
         print('County:', event['county'])
         print('Date:', event['datetime'])
@@ -135,7 +134,7 @@ def parse_alerts():
         'Glen Gardner': ['Glenn Gardener', 'Glen Garner', 'Glengardner'],
         'High Bridge': ['Highbridge', 'highbridge'],
         'High Bridge Borough': ['Hybridsboro'],
-        'Hunterdon': ['Huntingdon', 'Hunter'],
+        'Hunterdon': ['Huntingdon', 'Hunter', 'Hunterdondon'],
         'Hunterdon Care Center': ['Hunter and Care Center', 'Hunterdon and Care Center', 'Hunter Care Center'],
         'Kingwood Township': ['with Township', 'Kenwood Township'],
         'Lambertville': ['Lambeville', 'Lamerill', 'Lamberville', 'Lamerville', 'Laramville', 'Limberville', "Lamarville", 'Lambauville', 'Lumberphil',
