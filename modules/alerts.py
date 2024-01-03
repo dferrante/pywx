@@ -24,8 +24,8 @@ class Scanner(base.Command):
         {% if full_address %} {{ gmaps_url }} {% endif %}
         {{ transcription|highlight(event.symptom) }}"""
 
-    important_stations = ['45fire', '46fire', 'sbes']
-    very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west']
+    important_stations = ['45fire', '46fire', 'sbes', 'southbranch']
+    very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west', 'norma']
     important_words = ['clinton', 'annandale', 'school']
 
     repeating_regex = re.compile(r"(?P<first>.*)(Repeating|repeating|Paging)[\s.,]+(?P<repeat>.*)")
