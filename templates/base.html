@@ -56,9 +56,7 @@
                 <span style="color: {% if request.args.get('county') == None %}#fa7516{% else %}#3c99cf{% endif %}">all</span>
             </a> -
             {% for county in counties %}
-                <a href="{% if request.args.get('county') == county %}/{% else %}/?county={{ county }}{% endif %}">
-                    {% if request.args.get('county') == county %}<span style="color: #fa7516">{% endif %}{{ county }}{% if request.args.get('county') == county %}</span>{% endif %}
-                </a>
+                <a href="{% if request.args.get('county') == county %}/{% else %}/?county={{ county }}{% endif %}">{% if request.args.get('county') == county %}<span style="color: #fa7516">{% endif %}{{ county }}{% if request.args.get('county') == county %}</span>{% endif %}</a>
                 {% if loop.revindex != 1 %} - {% endif %}
             {% endfor %}
              |
@@ -66,12 +64,16 @@
                 {% if request.path == '/stations' %}<span style="color: #fa7516">{% endif %}station list{% if request.path == '/stations' %}</span>{% endif %}</a>
             {% if request.args.get('station') %}<span style="color: #fa7516">[{{ request.args.get('station') }}]</span>{% endif %}
              |
+             <a href="/towns">
+                {% if request.path == '/towns' %}<span style="color: #fa7516">{% endif %}town list{% if request.path == '/towns' %}</span>{% endif %}</a>
+             {% if request.args.get('town') %}<span style="color: #fa7516">[{{ request.args.get('town') }}]</span>{% endif %}
+              |
             search:
             <form class="search" action="/">
                 <input type="text" id="search" name="search" {% if request.args.get('search') %}value="{{ request.args.search }}"{% endif %}>
                 {% if request.args.get('station') %}<input type="hidden" name="station" value="{{ request.args.get('station') }}">{% endif %}
                 {% if request.args.get('county') %}<input type="hidden" name="county" value="{{ request.args.get('county') }}">{% endif %}
-            ></form>
+            </form>
         <div>
         <br>
         {% block body %}{% endblock %}

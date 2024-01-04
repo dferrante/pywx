@@ -62,6 +62,8 @@ def list():
             default_search['responding'] = {'ilike': f'%{request.args["station"]}%'}
         if request.args.get('county'):
             default_search['county'] = {'ilike': f'%{request.args["county"]}%'}
+        if request.args.get('town'):
+            default_search['town'] = request.args["town"]
 
         event_query = event_table.find(**default_search)
 
@@ -113,6 +115,22 @@ def stations():
         county_station[county] = sorted(county_station[county])
 
     return render_template('stations.html', county_station=county_station, counties=counties)
+
+
+@app.route('/towns')
+def towns():
+    database = dataset.connect(config['alerts_database'])
+    event_table = database['scanner']
+
+    county_towns = collections.defaultdict(set)
+    for event in event_table.all():
+        if event['town']:
+            county_towns[event['county']].add(event['town'])
+
+    for county in county_towns:
+        county_towns[county] = sorted(county_towns[county])
+
+    return render_template('towns.html', county_towns=county_towns, counties=counties)
 
 
 @app.route('/favicon.ico')

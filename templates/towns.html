@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Fire/EMS Alerts - Town List{% endblock %}
+
+{% block body %}
+    {% for county in counties %}
+        <b>{{ county }}:</b><br>
+        {% for town in county_towns[county] %}
+            <a href="/?town={{ town }}">
+                {{ town }}
+            </a><br>
+        {% endfor %}
+        <br>
+    {% endfor %}
+{% endblock %}
