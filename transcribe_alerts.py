@@ -125,6 +125,8 @@ def parse_alerts():
     street_types += [s.lower() for s in street_types]
     street_types = '|'.join(street_types)
 
+    line_breaks = '|'.join(['Repeating', 'Paging', 'Again', 'repeating', 'paging', 'again'])
+
     genders = r"(?P<gender>male|female|Male|Female)"
 
     age_regex = re.compile(fr"(?P<age>\d+|{text_ages})(-?ish)?('s)?[\s-]+years?([\s-]+olds?)?")
@@ -132,10 +134,10 @@ def parse_alerts():
 
     gender_regex = re.compile(rf"years?([\s-]+olds?)?[\s,]+{genders}")
 
-    symptom_regex = re.compile(rf"years?([\s-]+olds?)?[\s,]+{genders}?[\s,]{{,2}}(with a |who |with |that |they |described as (a )?|complaining of)?(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}(Repeating|repeating|Paging|\d+)")
-    action_regex = re.compile(rf"(for|For) (an? )?({genders}\s)?(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}(Repeating|repeating|Paging)")
-    gender_action_regex = re.compile(rf"{genders}[\s,\.]{{,2}}(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}(Repeating|repeating|Paging)")
-    action_no_for_regex = re.compile(fr"({street_types})[\s,]+(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}(Repeating|repeating|Paging)")
+    symptom_regex = re.compile(rf"years?([\s-]+olds?)?[\s,]+{genders}?[\s,]{{,2}}(with a |who |with |that |they |described as (a )?|complaining of)?(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}({line_breaks}|\d+)")
+    action_regex = re.compile(rf"(for|For) (an? )?({genders}\s)?(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}({line_breaks})")
+    gender_action_regex = re.compile(rf"{genders}[\s,\.]{{,2}}(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}({line_breaks})")
+    action_no_for_regex = re.compile(fr"({street_types})[\s,]+(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}({line_breaks})")
 
     city_regex = re.compile(r"(?P<town>(City|Town|city|town) of \w+)")
     town_regex = re.compile(r"(?P<town>(West |East |Glen |High )?\w+\s(Borough|Township|County|Town|City|township|borough))")

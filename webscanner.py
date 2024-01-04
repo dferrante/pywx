@@ -18,7 +18,7 @@ except ImportError:
     print('cant import local_config.py')
     sys.exit()
 
-repeating_regex = re.compile(r"(?P<first>.*)(Repeating|repeating|Paging)[\s.,]+(?P<repeat>.*)")
+repeating_regex = re.compile(r"(?P<first>.*)(Repeating|Paging|Again|repeating|paging|again)[\s.,]+(?P<repeat>.*)")
 important_stations = ['45fire', '46fire', 'sbes', 'southbranch']
 very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west', 'norma']
 important_words = ['clinton', 'annandale', 'school']
