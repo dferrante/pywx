@@ -189,7 +189,7 @@ def parse_alerts():
                 break
 
         if event['town']:
-            event['town'] = event['town'].replace('Town of', '').replace('City of', '')
+            event['town'] = event['town'].replace('Town of', '').replace('City of', '').title().strip()
 
         route78_match = route78_regex.search(text)
         if route78_match:
@@ -214,6 +214,9 @@ def parse_alerts():
                 route_match = route_address_regex.search(text)
                 if route_match:
                     event['address'] = route_match.group('address').replace(',', '').replace('at', 'Route').replace('route', 'Route')
+
+        if event['address']:
+            event['address'] = event['address'].title().strip()
 
         for regex in [symptom_regex, gender_action_regex, action_regex, action_no_for_regex]:
             symptom_match = regex.search(text)
