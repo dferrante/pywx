@@ -4,13 +4,19 @@ from spelling_correct import spelling_correct
 
 
 if __name__ == '__main__':
+    last_correction = ""
     while True:
         misspelling = input("misspelling: ")
         correction = input("correction: ")
-        if not misspelling or not correction:
+        if not misspelling and not correction:
             exit()
-        corrections = spelling_correct.get(correction, [])
-        corrections.append(misspelling)
-        spelling_correct[correction] = corrections
+        if not correction:
+            correction = last_correction
+        corrections = spelling_correct.get(correction, set())
+        corrections.add(misspelling)
+        spelling_correct[correction] = set(corrections)
+        for k, v in spelling_correct.items():
+            spelling_correct[k] = set(v)
         with open('spelling_correct.py', 'w') as f:
             f.write(f'spelling_correct = {pprint.pformat(spelling_correct, compact=True)}\n')
+        last_correction = correction

@@ -1,4 +1,3 @@
-import collections
 import datetime
 import json
 import os
@@ -21,12 +20,12 @@ except ImportError:
     sys.exit()
 
 
-def parse_alerts():
-    print('starting transcription')
+def get_mp3s():
+    print('getting mp3s')
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
 
-    for county in ['hunterdon', 'morris', 'warren']:
+    for county in ['hunterdon', 'morris', 'warren', 'sussex']:
         mp3s = []
         alerts_url = f'https://dispatchalert.group//includes/js/flat.audio.{county}.js'
         resp = requests.get(alerts_url)
@@ -40,7 +39,10 @@ def parse_alerts():
         last_event_date = None
         group_in_seconds = 30
         for mp3_url in mp3s:
-            parsed_url = re.search(r"https://dispatchalert.net/(?P<county>[^/]+)/(?P<unit>[^/_]+)__?(?P<datetime>[\d_]+).mp3", mp3_url).groupdict()
+            try:
+                parsed_url = re.search(r"https://dispatchalert.net/(?P<county>[^/]+)/(?P<unit>[^/_]+)__?(?P<datetime>[\d_]+).mp3", mp3_url).groupdict()
+            except AttributeError:
+                continue
             parsed_url['unit'] = ' '.join(parsed_url['unit'].split('-'))
             parsed_url['mp3_url'] = mp3_url
             parsed_url['datetime'] = datetime.datetime.strptime(parsed_url['datetime'], "%Y_%m_%d_%H_%M_%S")
@@ -69,16 +71,17 @@ def parse_alerts():
                 print('inserting', event['mp3_url'])
                 event_table.insert(dict(county=event['county'], datetime=first_datetime, responding=responding, mp3_url=event['mp3_url'], is_transcribed=False, is_irc_notified=False))
 
-    county_count = collections.defaultdict(int)
+
+def download_and_transcribe():
+    print('starting transcriptions')
+    database = dataset.connect(config['alerts_database'])
+    event_table = database['scanner']
+
     model = WhisperModel("large-v2", device="cpu", compute_type="int8", download_root="data/whisper")
     for event in event_table.find(is_transcribed=False, order_by=['datetime']):
         if event['datetime'] < (datetime.datetime.now() - datetime.timedelta(days=5)) and event['county'] == 'hunterdon':
             print(f'event {event["id"]} too old, skipping')
             continue
-        if event['county'] != 'hunterdon':
-            county_count[event['county']] += 1
-            if county_count[event['county']] > 2:
-                continue
         print('ID:', event['id'])
         print('County:', event['county'])
         print('Date:', event['datetime'])
@@ -104,6 +107,11 @@ def parse_alerts():
         event_table.update(dict(id=event['id'], transcription=transcription), ['id'])
         print('-------------')
 
+
+def parse_transcriptions():
+    print('parsing transcriptions')
+    database = dataset.connect(config['alerts_database'])
+    event_table = database['scanner']
     age_to_int = {
         'one': 1,
         'two': 2,
@@ -134,13 +142,13 @@ def parse_alerts():
 
     gender_regex = re.compile(rf"years?([\s-]+olds?)?[\s,]+{genders}")
 
-    symptom_regex = re.compile(rf"years?([\s-]+olds?)?[\s,]+{genders}?[\s,]{{,2}}(with a |who |with |that |they |described as (a )?|complaining of)?(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}({line_breaks}|\d+)")
-    action_regex = re.compile(rf"(for|For) (an? )?({genders}\s)?(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}({line_breaks})")
+    symptom_regex = re.compile(rf"years?([\s-]+olds?)?[\s,]+{genders}?[\s,]{{,2}}(with a |who |with |that |they |described as (a )?|complaining of|for the )?(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}({line_breaks}|\d+)")
+    action_regex = re.compile(rf"(for|For) (an? |the )?({genders}\s)?(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}({line_breaks})")
     gender_action_regex = re.compile(rf"{genders}[\s,\.]{{,2}}(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}({line_breaks})")
     action_no_for_regex = re.compile(fr"({street_types})[\s,]+(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}({line_breaks})")
 
     city_regex = re.compile(r"(?P<town>(City|Town|city|town) of \w+)")
-    town_regex = re.compile(r"(?P<town>(West |East |Glen |High )?\w+\s(Borough|Township|County|Town|City|township|borough))")
+    town_regex = re.compile(r"(?P<town>(West |East |Glen |High |New )?\w+\s(Borough|Township|County|Town|City|township|borough))")
     county_regex = re.compile(r"(?P<town>(West |East |Glen |High )?\w+\s(County))")
 
     address_regex = re.compile(fr"(?P<address>\d[\d-]*[,\s-]{{,2}}([A-Z0-9][\w-]+[,\s]+){{,3}}({street_types}))")
@@ -149,19 +157,21 @@ def parse_alerts():
     milemarker_regex = re.compile(r"mile marker[\s,]{,2}(?P<mile>\d+( over \d|\.\d)?)")
     exit_regex = re.compile(r"exit\s(number)?\s?(?P<exit>\d+)", re.I)
 
-    print('updating rows')
     update_rows = []
     for event in event_table.all():
         text = event['transcription']
         if not text:
             continue
-        text = re.sub(r"(don)+", 'don', text)
+        text = re.sub(r"(don)+", '', text)
         text = re.sub(r"(ton)+", 'don', text)
+        text = re.sub(r"(ship)+", 'ship', text)
         text = re.sub(r"(ington)+", 'ington', text)
         text = re.sub(r"(ingdon)+", '', text)
+        text = re.sub(r"(on){3,}", '', text)
         for correction, misspellings in spelling_correct.items():
             for misspelling in misspellings:
-                text = text.replace(misspelling, correction)
+                if misspelling in text:
+                    text = text.replace(misspelling, correction)
         text = text.strip()
         text = text.replace('  ', ' ')
 
@@ -235,4 +245,6 @@ def parse_alerts():
 
 
 if __name__ == '__main__':
-    parse_alerts()
+    get_mp3s()
+    download_and_transcribe()
+    parse_transcriptions()
