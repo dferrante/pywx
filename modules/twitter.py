@@ -1,5 +1,4 @@
 import json
-import logging
 import subprocess
 from urllib.parse import urlparse
 
@@ -44,5 +43,5 @@ class TwitterParser(ParserCommand):
                             tweetlines.append(f'{tweetline}')
                     lines.extend(tweetlines)
                 except Exception: # pylint: disable=broad-except
-                    logging.exception("twitter problem")
+                    pass
         return lines

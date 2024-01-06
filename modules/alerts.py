@@ -1,4 +1,3 @@
-import logging as log
 import re
 from urllib.parse import quote_plus
 
@@ -6,8 +5,6 @@ import dataset
 
 from . import base
 from .registry import register, register_periodic
-
-log.basicConfig(level=log.INFO, format="%(asctime)-15s %(levelname)s %(message)s")
 
 
 def highlight(text, phrase):
@@ -19,7 +16,7 @@ def highlight(text, phrase):
 class Scanner(base.Command):
     multiline = True
     template = """-------------
-        {{ datetime|c('royal') }} - {{ responding|c(station_color) }} - {{ event.id }}
+        {{ datetime|c('royal') }} - {{ event['county']|c('orange') }} - {{ responding|c(station_color) }} - {{ event.id }}
         {% if full_address %} {{ full_address|c(vip_word_color) }} {% elif event.town %} {{ event.town|c(vip_word_color) }} {% elif event.address %} {{ event.address|c(vip_word_color) }} {% endif %}
         {% if full_address %} {{ gmaps_url }} {% endif %}
         {{ transcription|highlight(event.symptom) }}"""
@@ -76,18 +73,15 @@ class Scanner(base.Command):
 @register_periodic('scanner', 30, chans=['#scanner'])
 class ScannerAlerter(Scanner):
     def context(self, msg):
-        log.info('running scanner')
         database = dataset.connect(self.config['alerts_database'])
         event_table = database['scanner']
 
         event = event_table.find_one(is_irc_notified=False, is_transcribed=True, order_by=['datetime'])
         if event:
-            log.info(f'found event {event["id"]}')
             event['is_irc_notified'] = True
             event_table.update(dict(event), ['id'])
             database.close()
             return self.event_context(event)
-        log.info('no new events')
         database.close()
         raise base.NoMessage
 

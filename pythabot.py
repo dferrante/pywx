@@ -1,10 +1,11 @@
 import datetime
-import logging as log
 import socket
 import sys
 import time
 
-log.basicConfig(level=log.INFO, format="%(asctime)-15s %(levelname)s %(message)s")
+from logger import get_logger
+
+log = get_logger('pythabot')
 
 
 class Pythabot:

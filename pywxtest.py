@@ -44,8 +44,8 @@ if __name__ == '__main__':
     reg = registry.registry
     reg.load_modules(config)
 
-    # test_command('lastalert', '170')
-    test_parser('https://twitter.com/UssamaMakdisi/status/1728055648280072598')
+    test_command('lastalert', '170')
+    # test_parser('https://twitter.com/UssamaMakdisi/status/1728055648280072598')
     # test_periodic_command(config, "scanner")
     # test_periodic_command(config, "scanner")
     # test_periodic_command(config, "scanner")

@@ -9,19 +9,21 @@ import dataset
 import requests
 from faster_whisper import WhisperModel
 
+from logger import get_logger
 from spelling_correct import spelling_correct
 
+log = get_logger('transcribe_alerts')
 
 try:
     config = json.load(open('data/local_config.json', encoding='utf-8'))
     config['pywx_path'] = os.path.dirname(os.path.abspath(__file__))
 except ImportError:
-    print('cant import local_config.py')
+    log.error('cant import local_config.py')
     sys.exit()
 
 
 def get_mp3s():
-    print('getting mp3s')
+    log.info('getting mp3s')
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
 
@@ -65,51 +67,42 @@ def get_mp3s():
             existing_event = event_table.find_one(county=event['county'], datetime=first_datetime)
             if existing_event:
                 if responding != existing_event['responding']:
-                    print('updating', existing_event['mp3_url'])
+                    log.info('updating', existing_event['mp3_url'])
                     event_table.update(dict(responding=responding, id=existing_event['id']), ['id'])
             else:
-                print('inserting', event['mp3_url'])
+                log.info('inserting', event['mp3_url'])
                 event_table.insert(dict(county=event['county'], datetime=first_datetime, responding=responding, mp3_url=event['mp3_url'], is_transcribed=False, is_irc_notified=False))
 
 
 def download_and_transcribe():
-    print('starting transcriptions')
+    log.info('starting transcriptions')
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
 
     model = WhisperModel("large-v2", device="cpu", compute_type="int8", download_root="data/whisper")
     for event in event_table.find(is_transcribed=False, order_by=['datetime']):
         if event['datetime'] < (datetime.datetime.now() - datetime.timedelta(days=5)) and event['county'] == 'hunterdon':
-            print(f'event {event["id"]} too old, skipping')
+            log.warning(f'event {event["id"]} too old, skipping')
             continue
-        print('ID:', event['id'])
-        print('County:', event['county'])
-        print('Date:', event['datetime'])
-        print('Responding:')
-        for unit in event['responding'].split(','):
-            print("  - ", unit)
-        print()
 
-        print('downloading...')
+        log.info('downloading {}', event['mp3_url'])
         local_filename = '/tmp/temp.mp3'
         with requests.get(event['mp3_url'], stream=True) as r:
             with open(local_filename, 'wb') as f:
                 shutil.copyfileobj(r.raw, f)
 
-        print('transcribing...')
+        log.info('transcribing {}', event['mp3_url'])
         segments, _ = model.transcribe(local_filename, beam_size=5, vad_filter=True)
         transcription = []
         for segment in segments:
             transcription.append(segment.text)
-            print(segment.text)
 
         transcription = ' '.join(transcription)
         event_table.update(dict(id=event['id'], transcription=transcription), ['id'])
-        print('-------------')
 
 
 def parse_transcriptions():
-    print('parsing transcriptions')
+    log.info('parsing transcriptions')
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
     age_to_int = {
@@ -241,7 +234,7 @@ def parse_transcriptions():
 
     event_table.update_many(update_rows, ['id'])
     database.close()
-    print('done')
+    log.info('done')
 
 
 if __name__ == '__main__':
