@@ -30,13 +30,6 @@ def irc_color(value, color):
     return Markup(f'<span style="color: {color};">{value}</span>')
 
 
-def townsplit(text, town):
-    if town and town in text:
-        index = text.index(town)
-        return text[index + len(town):].lstrip(',').lstrip('.').strip()
-    return text
-
-
 @app.route("/")
 def list():
     database = dataset.connect(config['alerts_database'])
@@ -76,11 +69,11 @@ def list():
 
         repeat_search = repeating_regex.search(event['transcription'])
         if repeat_search:
-            first = townsplit(repeat_search.group('first'), event['town'])
-            repeat = townsplit(repeat_search.group('repeat'), event['town'])
+            first = repeat_search.group('first'), event['town']
+            repeat = repeat_search.group('repeat'), event['town']
             transcription = '<br>'.join([first, 'Repeating ' + repeat])
         else:
-            transcription = townsplit(event['transcription'], event['town'])
+            transcription = event['transcription'], event['town']
 
         payload = {
             'datetime': time,
