@@ -69,11 +69,11 @@ def list():
 
         repeat_search = repeating_regex.search(event['transcription'])
         if repeat_search:
-            first = repeat_search.group('first'), event['town']
-            repeat = repeat_search.group('repeat'), event['town']
+            first = repeat_search.group('first')
+            repeat = repeat_search.group('repeat')
             transcription = '<br>'.join([first, 'Repeating ' + repeat])
         else:
-            transcription = event['transcription'], event['town']
+            transcription = event['transcription']
 
         payload = {
             'datetime': time,
@@ -105,7 +105,11 @@ def stations():
             county_station[event['county']].add(station.strip())
 
     for county in county_station:
-        county_station[county] = sorted(county_station[county])
+        stations = []
+        for station in sorted(county_station[county]):
+            count = event_table.count(responding={'ilike': f'%{station}%'})
+            stations.append((station, count))
+        county_station[county] = stations
 
     return render_template('stations.html', county_station=county_station, counties=counties)
 
@@ -121,7 +125,11 @@ def towns():
             county_towns[event['county']].add(event['town'])
 
     for county in county_towns:
-        county_towns[county] = sorted(county_towns[county])
+        towns = []
+        for town in sorted(county_towns[county]):
+            count = event_table.count(town=town)
+            towns.append((town, count))
+        county_towns[county] = towns
 
     return render_template('towns.html', county_towns=county_towns, counties=counties)
 

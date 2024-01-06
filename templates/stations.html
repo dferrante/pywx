@@ -5,11 +5,14 @@
 {% block body %}
     {% for county in counties %}
         <b>{{ county }}:</b><br>
+        <table>
         {% for station in county_station[county] %}
-            <a href="/?station={{ station }}">
-                {{ station }}
-            </a><br>
+            <tr>
+                <td><a href="/?station={{ station[0] }}">{{ station[0] }}</a></td>
+                <td>[{{ station[1] }}]</td>
+            </tr>
         {% endfor %}
+        </table>
         <br>
     {% endfor %}
 {% endblock %}

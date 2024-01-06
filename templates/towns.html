@@ -5,11 +5,14 @@
 {% block body %}
     {% for county in counties %}
         <b>{{ county }}:</b><br>
+        <table>
         {% for town in county_towns[county] %}
-            <a href="/?town={{ town }}">
-                {{ town }}
-            </a><br>
+            <tr>
+                <td><a href="/?town={{ town[0] }}">{{ town[0] }}</a></td>
+                <td>[{{ town[1] }}]</td>
+            </tr>
         {% endfor %}
+        </table>
         <br>
     {% endfor %}
 {% endblock %}
