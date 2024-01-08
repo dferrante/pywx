@@ -16,7 +16,7 @@ COPY forecastio forecastio/
 COPY modules modules/
 COPY templates templates/
 COPY static static/
-COPY airports.dat acro.json __init__.py pythabot.py pywx.py transcribe_alerts.py webscanner.py spelling_correct.py ./
+COPY airports.dat acro.json __init__.py pythabot.py pywx.py transcribe_alerts.py webscanner.py spelling_correct.py logger.py ./
 
 # setup supervisord
 RUN mkdir -p /var/log/supervisor
