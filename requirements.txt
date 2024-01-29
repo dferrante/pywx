@@ -11,14 +11,14 @@ ctranslate2==3.22.0
 dataset==1.6.2
 faster-whisper @ git+https://github.com/dferrante/faster-whisper.git@750e6717cc92ade2b86abc81f4b2e95b0995a2df
 filelock==3.13.1
-Flask==3.0.0
+Flask==3.0.1
 flatbuffers==23.5.26
 fsspec==2023.10.0
 geographiclib==2.0
 geojson==2.5.0
 geopy==2.4.1
 google-api-core==2.14.0
-google-api-python-client==2.108.0
+google-api-python-client==2.115.0
 google-auth==2.23.4
 google-auth-httplib2==0.1.1
 googleapis-common-protos==1.61.0
@@ -29,7 +29,7 @@ humanfriendly==10.0
 idna==3.4
 importlib-metadata==6.8.0
 itsdangerous==2.1.2
-Jinja2==3.1.2
+Jinja2==3.1.3
 Mako==1.3.0
 MarkupSafe==2.1.3
 mpmath==1.3.0
