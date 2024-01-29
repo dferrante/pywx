@@ -84,7 +84,7 @@ def download_and_transcribe():
 
     model = WhisperModel("large-v2", device="cpu", compute_type="int8", download_root="data/whisper")
     for event in event_table.find(is_transcribed=False, order_by=['datetime']):
-        if event['datetime'] < (datetime.datetime.now() - datetime.timedelta(days=5)) and event['county'] == 'hunterdon':
+        if event['datetime'] < (datetime.datetime.now() - datetime.timedelta(days=5)):
             log.warning(f'event {event["id"]} too old, skipping')
             continue
 
