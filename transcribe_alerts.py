@@ -67,10 +67,10 @@ def get_mp3s():
             existing_event = event_table.find_one(county=event['county'], datetime=first_datetime)
             if existing_event:
                 if responding != existing_event['responding']:
-                    log.info('updating', existing_event['mp3_url'])
+                    log.info(f'updating {existing_event["mp3_url"]}')
                     event_table.update(dict(responding=responding, id=existing_event['id']), ['id'])
             else:
-                log.info('inserting', event['mp3_url'])
+                log.info(f'inserting {event["mp3_url"]}')
                 event_table.insert(dict(county=event['county'], datetime=first_datetime, responding=responding, mp3_url=event['mp3_url'], is_transcribed=False, is_irc_notified=False))
 
 
@@ -85,13 +85,13 @@ def download_and_transcribe():
             log.warning(f'event {event["id"]} too old, skipping')
             continue
 
-        log.info('downloading {}', event['mp3_url'])
+        log.info(f'downloading {event["mp3_url"]}')
         local_filename = '/tmp/temp.mp3'
         with requests.get(event['mp3_url'], stream=True) as r:
             with open(local_filename, 'wb') as f:
                 shutil.copyfileobj(r.raw, f)
 
-        log.info('transcribing {}', event['mp3_url'])
+        log.info(f'transcribing {event["mp3_url"]}')
         segments, _ = model.transcribe(local_filename, beam_size=5, vad_filter=True)
         transcription = []
         for segment in segments:
@@ -141,7 +141,7 @@ def parse_transcriptions():
     action_no_for_regex = re.compile(fr"({street_types})[\s,]+(?P<symptom>[\w\W]+?)[\s,\.]{{,2}}({line_breaks})")
 
     city_regex = re.compile(r"(?P<town>(City|Town|city|town) of \w+)")
-    town_regex = re.compile(r"(?P<town>(West |East |Glen |High |New )?\w+\s(Borough|Township|County|Town|City|township|borough))")
+    town_regex = re.compile(r"(?P<town>(West |East |Glen |High |New )?\w+\s(Borough|Township|Town|City|township|borough))")
     county_regex = re.compile(r"(?P<town>(West |East |Glen |High )?\w+\s(County))")
 
     address_regex = re.compile(fr"(?P<address>\d[\d-]*[,\s-]{{,2}}([A-Z0-9][\w-]+[,\s]+){{,3}}({street_types}))")
@@ -158,6 +158,7 @@ def parse_transcriptions():
         text = re.sub(r"(don)+", '', text)
         text = re.sub(r"(ton)+", 'don', text)
         text = re.sub(r"(ship)+", 'ship', text)
+        text = re.sub(r"(hip)+", '', text)
         text = re.sub(r"(ington)+", 'ington', text)
         text = re.sub(r"(ingdon)+", '', text)
         text = re.sub(r"(on){3,}", '', text)
