@@ -16,7 +16,7 @@ def highlight(text, phrase):
 class Scanner(base.Command):
     multiline = True
     template = """-------------
-        {{ datetime|c('royal') }} - {{ event['county']|c('orange') }} - {{ responding|c(station_color) }} - {{ event.id }}
+        {{ datetime|c('royal') }} - {{ event['county']|c(county_color) }} - {{ responding|c(station_color) }} - {{ event.id }}
         {% if full_address %} {{ full_address|c(vip_word_color) }} {% elif event.town %} {{ event.town|c(vip_word_color) }} {% elif event.address %} {{ event.address|c(vip_word_color) }} {% endif %}
         {% if full_address %} {{ gmaps_url }} {% endif %}
         {{ transcription|highlight(event.symptom) }}"""
@@ -40,17 +40,21 @@ class Scanner(base.Command):
     def event_context(self, event):
         time = event['datetime'].strftime('%-I:%M%p')
         responding = ' - '.join([unit for unit in event['responding'].split(',')])
-        station_color = 'red' if any([station in event['responding'].lower() for station in self.important_stations]) else 'orange'
-        vip_word_color = 'yellow' if any([word in event['transcription'].lower() for word in self.important_words if word]) else 'royal'
-        vip_word_color = 'red' if any([word in event['transcription'].lower() for word in self.very_important_words if word]) else vip_word_color
+        if event['county'] == 'hunterdon':
+            county_color = 'pink'
+            station_color = 'red' if any([station in event['responding'].lower() for station in self.important_stations]) else 'orange'
+            vip_word_color = 'yellow' if any([word in event['transcription'].lower() for word in self.important_words if word]) else 'royal'
+            vip_word_color = 'red' if any([word in event['transcription'].lower() for word in self.very_important_words if word]) else vip_word_color
+        else:
+            county_color = 'orange'
+            station_color = 'orange'
+            vip_word_color = 'royal'
 
         repeat_search = self.repeating_regex.search(event['transcription'])
         if repeat_search:
-            first = self.townsplit(repeat_search.group('first'), event['town'])
-            repeat = self.townsplit(repeat_search.group('repeat'), event['town'])
-            transcription = '\n'.join([first, 'Repeating ' + repeat])
+            transcription = '\n'.join([repeat_search.group('first'), 'Repeating ' + repeat_search.group('repeat')])
         else:
-            transcription = self.townsplit(event['transcription'], event['town'])
+            transcription = event['transcription']
 
         payload = {
             'datetime': time,
@@ -58,6 +62,7 @@ class Scanner(base.Command):
             'vip_word_color': vip_word_color,
             'transcription': transcription,
             'station_color': station_color,
+            'county_color': county_color,
             'event': event,
         }
 
