@@ -8,6 +8,7 @@ import sys
 import dataset
 import requests
 from faster_whisper import WhisperModel
+from sqlalchemy import Text
 
 from logger import get_logger
 from spelling_correct import spelling_correct
@@ -26,6 +27,8 @@ def get_mp3s():
     log.info('getting mp3s')
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
+    if 'original_transcription' not in event_table.columns:
+        event_table.create_column('original_transcription', Text)
 
     for county in ['hunterdon', 'morris', 'warren', 'sussex']:
         mp3s = []
@@ -155,6 +158,11 @@ def parse_transcriptions():
         text = event['transcription']
         if not text:
             continue
+        if not event['original_transcription']:
+            event['original_transcription'] = event['transcription']
+        else:
+            text = event['original_transcription']
+
         text = re.sub(r"(don)+", '', text)
         text = re.sub(r"(ton)+", 'don', text)
         text = re.sub(r"(ship)+", 'ship', text)
