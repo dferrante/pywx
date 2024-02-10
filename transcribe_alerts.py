@@ -166,7 +166,7 @@ def parse_transcriptions():
         text = re.sub(r"(don)+", '', text)
         text = re.sub(r"(ton)+", 'don', text)
         text = re.sub(r"(ship)+", 'ship', text)
-        text = re.sub(r"(hip)+", '', text)
+        text = re.sub(r"(hip)+", 'hip', text)
         text = re.sub(r"(ington)+", 'ington', text)
         text = re.sub(r"(ingdon)+", '', text)
         text = re.sub(r"(on){3,}", '', text)
