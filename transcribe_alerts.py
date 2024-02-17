@@ -101,7 +101,7 @@ def download_and_transcribe():
             transcription.append(segment.text)
 
         transcription = ' '.join(transcription)
-        event_table.update(dict(id=event['id'], transcription=transcription), ['id'])
+        event_table.update(dict(id=event['id'], transcription=transcription, is_transcribed=True), ['id'])
 
 
 def parse_transcriptions():
@@ -238,7 +238,6 @@ def parse_transcriptions():
                     event['gender'] = symptom_match.group('gender')
                 break
 
-        event['is_transcribed'] = True
         update_rows.append(event)
 
     event_table.update_many(update_rows, ['id'])
