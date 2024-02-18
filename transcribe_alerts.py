@@ -124,7 +124,7 @@ def parse_transcriptions():
 
     street_types = [
         'Street', 'Road', 'Lane', 'Drive', 'Avenue', 'Court', 'Blvd', 'Boulevard', 'Highway', 'Circle', 'Way', 'Plaza', 'Hillway',
-        'Pass', 'Pike', 'Plaza', 'Crestway', 'Place', 'Terrace', 'Ridge'
+        'Pass', 'Pike', 'Crestway', 'Place', 'Terrace', 'Ridge', 'Rd', 'Park', 'Run', 'Hills', 'Trail', 'Row', 'St'
     ]
     street_types += [s.lower() for s in street_types]
     street_types = '|'.join(street_types)
@@ -152,6 +152,10 @@ def parse_transcriptions():
     route78_regex = re.compile(r"(route|interstate)[\s-]78", re.I)
     milemarker_regex = re.compile(r"mile marker[\s,]{,2}(?P<mile>\d+( over \d|\.\d)?)")
     exit_regex = re.compile(r"exit\s(number)?\s?(?P<exit>\d+)", re.I)
+
+    #morris
+    cross_regex = re.compile(r"(?P<alert>.+) [cC]ross off?")
+    morris_regex = re.compile(rf"\s(?P<symptom>[^,]+)[.,]?\s(?P<address>(\d+(th|[A-Z])?|[Ff]or|[Tt]o)[.,]?\s([\w\s'.]+({street_types})|[Rr]oute [\d]+))[,.]? (?P<town>[^,.]+)")
 
     update_rows = []
     for event in event_table.all():
@@ -193,6 +197,29 @@ def parse_transcriptions():
         gender_match = gender_regex.search(text)
         if gender_match:
             event['gender'] = gender_match.group('gender')
+
+        cross_of_match = cross_regex.search(text)
+        if cross_of_match and event['county'] == 'morris':
+            alert = cross_of_match.group('alert')
+            morris_match = morris_regex.search(alert)
+            if morris_match:
+                event['symptom'] = morris_match.group('symptom')
+                if event['symptom'] == 'Falls':
+                    event['symptom'] == 'fall victim'
+                    event['transcription'] = event['transcription'].replace('Falls', 'fall victim')
+                address = morris_match.group('address').replace(',', '')
+                if address.startswith('To'):
+                    address = address.replace('To', '2')
+                if address.startswith('to'):
+                    address = address.replace('to', '2')
+                if address.startswith('For'):
+                    address = address.replace('For', '4')
+                if address.startswith('for'):
+                    address = address.replace('for', '4')
+                event['address'] = address
+                event['town'] = morris_match.group('town')
+                update_rows.append(event)
+                continue
 
         for regex in [city_regex, town_regex, county_regex]:
             location_match = regex.search(text)
@@ -246,6 +273,6 @@ def parse_transcriptions():
 
 
 if __name__ == '__main__':
-    get_mp3s()
-    download_and_transcribe()
+    # get_mp3s()
+    # download_and_transcribe()
     parse_transcriptions()
