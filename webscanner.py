@@ -40,6 +40,7 @@ def list():
     environment.filters['highlight'] = lambda text, phrase: text.replace(phrase, irc_color(phrase, '#b8ecf2')) if phrase else text
     environment.filters['station_highlight'] = lambda station: irc_color(station, 'red') if any([important_station in station.lower() for important_station in important_stations]) else irc_color(station, '#fa7516')
 
+    page = int(request.args.get('page', 1))
     event_query = []
     if request.args.get('id'):
         event_query = event_table.find(id=request.args['id'])
@@ -47,7 +48,8 @@ def list():
         default_search = {
             'is_transcribed': True,
             'order_by': ['-datetime'],
-            '_limit': 100
+            '_limit': 100,
+            '_offset': (page - 1) * 100
         }
         if request.args.get('search'):
             default_search['transcription'] = {'ilike': f'%{request.args["search"]}%'}
@@ -59,6 +61,7 @@ def list():
             default_search['town'] = request.args["town"]
 
         event_query = event_table.find(**default_search)
+        event_count = event_table.count(**default_search)
 
     events = []
     for event in event_query:
@@ -91,7 +94,7 @@ def list():
 
         events.append(payload)
 
-    return render_template('index.html', events=events, counties=counties, request=request)
+    return render_template('index.html', events=events, counties=counties, request=request, event_count=event_count)
 
 
 @app.route('/stations')
