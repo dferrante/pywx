@@ -44,6 +44,7 @@ def list():
     event_query = []
     if request.args.get('id'):
         event_query = event_table.find(id=request.args['id'])
+        event_count = False
     else:
         default_search = {
             'is_transcribed': True,

@@ -155,7 +155,7 @@ def parse_transcriptions():
 
     #morris
     cross_regex = re.compile(r"(?P<alert>.+) [cC]ross off?")
-    morris_regex = re.compile(rf"[.,]\s(?P<symptom>[^,]+)[.,]?\s(?P<address>(\d+(th|[A-Z])?|[Ff]or|[Tt]o)[.,]?\s([\w\s'.]+({street_types})|[Rr]oute [\d]+))[,.]? (?P<town>[^,.]+)")
+    morris_regex = re.compile(rf"[.,]\s(?P<symptom>[^,]+)[.,]?\s(?P<address>([\d\-.]+(th|[A-Z])?|[Ff]or|[Tt]o)[.,]?\s([\w\s'.-]+({street_types})|[Rr]oute [\d]+))[,.]? (?P<town>[^,.]+)")
 
     update_rows = []
     for event in event_table.all():
@@ -205,7 +205,7 @@ def parse_transcriptions():
             if morris_match:
                 event['symptom'] = morris_match.group('symptom')
                 if event['symptom'] == 'Falls':
-                    event['symptom'] == 'fall victim'
+                    event['symptom'] = 'fall victim'
                     event['transcription'] = event['transcription'].replace('Falls', 'fall victim')
                 address = morris_match.group('address').replace(',', '')
                 if address.startswith('To'):
