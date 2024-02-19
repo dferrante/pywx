@@ -155,7 +155,7 @@ def parse_transcriptions():
 
     #morris
     cross_regex = re.compile(r"(?P<alert>.+) [cC]ross off?")
-    morris_regex = re.compile(rf"\s(?P<symptom>[^,]+)[.,]?\s(?P<address>(\d+(th|[A-Z])?|[Ff]or|[Tt]o)[.,]?\s([\w\s'.]+({street_types})|[Rr]oute [\d]+))[,.]? (?P<town>[^,.]+)")
+    morris_regex = re.compile(rf"[.,]\s(?P<symptom>[^,]+)[.,]?\s(?P<address>(\d+(th|[A-Z])?|[Ff]or|[Tt]o)[.,]?\s([\w\s'.]+({street_types})|[Rr]oute [\d]+))[,.]? (?P<town>[^,.]+)")
 
     update_rows = []
     for event in event_table.all():
