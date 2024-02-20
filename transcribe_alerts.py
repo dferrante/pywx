@@ -154,8 +154,8 @@ def parse_transcriptions():
     exit_regex = re.compile(r"exit\s(number)?\s?(?P<exit>\d+)", re.I)
 
     #morris
-    cross_regex = re.compile(r"(?P<alert>.+) [cC]ross off?")
-    morris_regex = re.compile(rf"[.,]\s(?P<symptom>[^,]+)[.,]?\s(?P<address>([\d\-.]+(th|[A-Z])?|[Ff]or|[Tt]o)[.,]?\s([\w\s'.-]+({street_types})|[Rr]oute [\d]+))[,.]? (?P<town>[^,.]+)")
+    cross_regex = re.compile(r"(?P<alert>.*?)[,.]\s([Cc]ross off?)")
+    morris_regex = re.compile(rf"(?P<symptom>[^,]+)[.,]?\s(?P<address>([\d\-.]+(th|[A-Z])?|[Ff]or|[Tt]o)[.,]?\s([\w\s'.-]+({street_types})|[Rr]oute [\d]+))[,.]? (?P<town>[^,.]+)")
 
     update_rows = []
     for event in event_table.all():
@@ -201,12 +201,33 @@ def parse_transcriptions():
         cross_of_match = cross_regex.search(text)
         if cross_of_match and event['county'] == 'morris':
             alert = cross_of_match.group('alert')
+            alert_split = list(re.split(r'[,.]\s', alert))
+            last_responder = 0
+            for cnt, part in enumerate(alert_split):
+                match = False
+                for responder_catch in ['EMS', 'Company', 'Engine', 'ladder', 'platform', 'Utility', 'Team', 'Township',
+                                        'Rockaway', 'RIC', 'engine', 'Dover', 'Vernon', 'Chatham', 'Cedar', 'Boon', 'District', 'Lakes',
+                                        'Valley', 'lakes', 'captain', 'Wharton', 'Whippany', 'Sterling', 'Mountain Fire', 'Randolph', 'Platform', 'Parsippany', 'Netcong', 'Mount Tabor', 'Mount Arl'
+                                        'Morris', 'Minute', 'Mine Hill', 'Mill Fire', 'Mendham', 'Ladder', 'Captain', 'captain', 'Village', 'Fairmount', 'Chester', 'Brookside']:
+                    if responder_catch in part:
+                        match = True
+                        last_responder = cnt + 1
+                        break
+                if part == 'St':
+                    match = True
+                if not match:
+                    break
+            alert = ', '.join(alert_split[last_responder:])
             morris_match = morris_regex.search(alert)
             if morris_match:
-                event['symptom'] = morris_match.group('symptom')
-                if event['symptom'] == 'Falls':
+                event['symptom'] = morris_match.group('symptom').lower()
+                if event['symptom'] == 'falls':
                     event['symptom'] = 'fall victim'
-                    event['transcription'] = event['transcription'].replace('Falls', 'fall victim')
+                    event['transcription'] = event['transcription'].replace('falls', 'fall victim')
+                else:
+                    event['transcription'] = event['transcription'].replace(morris_match.group('symptom'), event['symptom'])
+                event['symptom'] = event['symptom'].strip()
+
                 address = morris_match.group('address').replace(',', '')
                 if address.startswith('To'):
                     address = address.replace('To', '2')
