@@ -294,6 +294,6 @@ def parse_transcriptions():
 
 
 if __name__ == '__main__':
-    # get_mp3s()
-    # download_and_transcribe()
+    get_mp3s()
+    download_and_transcribe()
     parse_transcriptions()
