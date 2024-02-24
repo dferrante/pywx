@@ -68,8 +68,8 @@ def list():
     for event in event_query:
         time = event['datetime'].strftime('%m/%d %-I:%M%p')
         responding = sorted(event['responding'].split(','))
-        vip_word_color = '#fa7516' if any([word in event['transcription'].lower() for word in important_words if word]) else '#3c99cf'
-        vip_word_color = 'red' if any([word in event['transcription'].lower() for word in very_important_words if word]) else vip_word_color
+        vip_word_color = '#fa7516' if any([word in event['transcription'].lower() for word in important_words if word]) and event['county'] == 'hunterdon' else '#3c99cf'
+        vip_word_color = 'red' if any([word in event['transcription'].lower() for word in very_important_words if word]) and event['county'] == 'hunterdon' else vip_word_color
 
         repeat_search = repeating_regex.search(event['transcription'])
         if repeat_search:
