@@ -124,7 +124,7 @@ def parse_transcriptions():
 
     street_types = [
         'Street', 'Road', 'Lane', 'Drive', 'Avenue', 'Court', 'Blvd', 'Boulevard', 'Highway', 'Circle', 'Way', 'Plaza', 'Hillway',
-        'Pass', 'Pike', 'Crestway', 'Place', 'Terrace', 'Ridge', 'Rd', 'Park', 'Run', 'Hills', 'Trail', 'Row', 'St'
+        'Pass', 'Pike', 'Crestway', 'Place', 'Terrace', 'Ridge', 'Rd', 'Park', 'Run', 'Hills', 'Trail', 'Row'
     ]
     street_types += [s.lower() for s in street_types]
     street_types = '|'.join(street_types)
