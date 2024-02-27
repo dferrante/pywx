@@ -81,7 +81,7 @@ class ScannerAlerter(Scanner):
         database = dataset.connect(self.config['alerts_database'])
         event_table = database['scanner']
 
-        event = event_table.find_one(is_irc_notified=False, is_transcribed=True, order_by=['datetime'])
+        event = event_table.find_one(is_irc_notified=False, is_transcribed=True, is_parsed=True, order_by=['datetime'])
         if event:
             event['is_irc_notified'] = True
             event_table.update(dict(event), ['id'])
@@ -109,6 +109,6 @@ class LastScanner(Scanner):
                 database.close()
                 raise base.ArgumentError('Event not found')
         else:
-            event = event_table.find_one(is_transcribed=True, order_by=['-datetime'])
+            event = event_table.find_one(is_transcribed=True, is_parsed=True, order_by=['-datetime'])
         database.close()
         return self.event_context(event)
