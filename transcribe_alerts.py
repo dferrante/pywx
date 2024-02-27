@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import json
 import os
@@ -74,7 +75,7 @@ def get_mp3s():
                     event_table.update(dict(responding=responding, id=existing_event['id']), ['id'])
             else:
                 log.info(f'inserting {event["mp3_url"]}')
-                event_table.insert(dict(county=event['county'], datetime=first_datetime, responding=responding, mp3_url=event['mp3_url'], is_transcribed=False, is_irc_notified=False))
+                event_table.insert(dict(county=event['county'], datetime=first_datetime, responding=responding, mp3_url=event['mp3_url'], is_transcribed=False, is_irc_notified=False, is_parsed=False))
 
 
 def download_and_transcribe():
@@ -85,7 +86,7 @@ def download_and_transcribe():
     model = WhisperModel("large-v2", device="cpu", compute_type="int8", download_root="data/whisper")
     for event in event_table.find(is_transcribed=False, order_by=['datetime']):
         if event['datetime'] < (datetime.datetime.now() - datetime.timedelta(days=5)):
-            log.warning(f'event {event["id"]} too old, skipping')
+            log.debug(f'event {event["id"]} too old, skipping')
             continue
 
         log.info(f'downloading {event["mp3_url"]}')
@@ -104,7 +105,7 @@ def download_and_transcribe():
         event_table.update(dict(id=event['id'], transcription=transcription, is_transcribed=True), ['id'])
 
 
-def parse_transcriptions():
+def parse_transcriptions(all_events):
     log.info('parsing transcriptions')
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
@@ -158,7 +159,12 @@ def parse_transcriptions():
     morris_regex = re.compile(rf"(?P<symptom>[^,]+)[.,]?\s(?P<address>([\d\-.]+(th|[A-Z])?|[Ff]or|[Tt]o)[.,]?\s([\w\s'.-]+({street_types})|[Rr]oute [\d]+))[,.]? (?P<town>[^,.]+)")
 
     update_rows = []
-    for event in event_table.all():
+    if all_events:
+        events = event_table.all()
+    else:
+        events = event_table.find(is_parsed=False)
+
+    for event in events:
         text = event['transcription']
         if not text:
             continue
@@ -239,6 +245,7 @@ def parse_transcriptions():
                     address = address.replace('for', '4')
                 event['address'] = address
                 event['town'] = morris_match.group('town')
+                event['is_parsed'] = True
                 update_rows.append(event)
                 continue
 
@@ -286,6 +293,7 @@ def parse_transcriptions():
                     event['gender'] = symptom_match.group('gender')
                 break
 
+        event['is_parsed'] = True
         update_rows.append(event)
 
     event_table.update_many(update_rows, ['id'])
@@ -294,6 +302,13 @@ def parse_transcriptions():
 
 
 if __name__ == '__main__':
-    get_mp3s()
-    download_and_transcribe()
-    parse_transcriptions()
+    parser = argparse.ArgumentParser(description="Grab and transcribe scanner traffic")
+    parser.add_argument('--fullparse', action='store_true', help="Enable full parsing mode")
+    parser.add_argument('--justparse', action='store_true', help="Just run parsing")
+    args = parser.parse_args()
+
+    if not args.justparse:
+        get_mp3s()
+        download_and_transcribe()
+    parse_transcriptions(all_events=args.fullparse)
+    sys.exit(0)
