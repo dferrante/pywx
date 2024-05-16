@@ -3,6 +3,12 @@
 {% block title %}Fire/EMS Alerts - Town List{% endblock %}
 
 {% block body %}
+<script>
+    function copyTextToClipboard(text) {
+        navigator.clipboard.writeText(text)
+    }
+</script>
+
     {% for county in counties %}
         <b>{{ county }}:</b><br>
         <table>
@@ -10,6 +16,7 @@
             <tr>
                 <td><a href="/?town={{ town[0] }}">{{ town[0] }}</a></td>
                 <td>[{{ town[1] }}]</td>
+                <td><button onclick="copyTextToClipboard('{{ town[0] }}')">copy</button></td>
             </tr>
         {% endfor %}
         </table>
