@@ -5,10 +5,12 @@ import os
 import re
 import shutil
 import sys
+import tempfile
 
 import dataset
 import requests
 from faster_whisper import WhisperModel
+from geopy.geocoders import GoogleV3
 from sqlalchemy import Text
 
 from logger import get_logger
@@ -21,7 +23,9 @@ try:
     config['pywx_path'] = os.path.dirname(os.path.abspath(__file__))
 except ImportError:
     log.error('cant import local_config.py')
-    sys.exit()
+    sys.exit(-1)
+
+geoloc = GoogleV3(api_key=config['youtube_key'])
 
 
 def get_mp3s():
@@ -34,7 +38,7 @@ def get_mp3s():
     for county in ['hunterdon', 'morris', 'warren', 'sussex']:
         mp3s = []
         alerts_url = f'https://dispatchalert.group//includes/js/flat.audio.{county}.js'
-        resp = requests.get(alerts_url)
+        resp = requests.get(alerts_url, timeout=60)
         for raw_line in resp.iter_lines():
             line = raw_line.decode('ascii').strip()
             if 'mp3:' in line:
@@ -90,16 +94,15 @@ def download_and_transcribe():
             continue
 
         log.info(f'downloading {event["mp3_url"]}')
-        local_filename = '/tmp/temp.mp3'
-        with requests.get(event['mp3_url'], stream=True) as r:
-            with open(local_filename, 'wb') as f:
-                shutil.copyfileobj(r.raw, f)
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
+            with requests.get(event['mp3_url'], stream=True, timeout=60) as r:
+                shutil.copyfileobj(r.raw, temp_file)
 
-        log.info(f'transcribing {event["mp3_url"]}')
-        segments, _ = model.transcribe(local_filename, beam_size=5, vad_filter=True)
-        transcription = []
-        for segment in segments:
-            transcription.append(segment.text)
+            log.info(f'transcribing {event["mp3_url"]}')
+            segments, _ = model.transcribe(temp_file.name, beam_size=5, vad_filter=True)
+            transcription = []
+            for segment in segments:
+                transcription.append(segment.text)
 
         transcription = ' '.join(transcription)
         event_table.update(dict(id=event['id'], transcription=transcription, is_transcribed=True), ['id'])
@@ -125,7 +128,7 @@ def parse_transcriptions(all_events):
 
     street_types = [
         'Street', 'Road', 'Lane', 'Drive', 'Avenue', 'Court', 'Blvd', 'Boulevard', 'Highway', 'Circle', 'Way', 'Plaza', 'Hillway',
-        'Pass', 'Pike', 'Crestway', 'Place', 'Terrace', 'Ridge', 'Rd', 'Park', 'Run', 'Hills', 'Trail', 'Row'
+        'Pass', 'Pike', 'Crestway', 'Place', 'Terrace', 'Ridge', 'Park', 'Run', 'Hills', 'Trail', 'Row'
     ]
     street_types += [s.lower() for s in street_types]
     street_types = '|'.join(street_types)
@@ -301,14 +304,34 @@ def parse_transcriptions(all_events):
     log.info('done')
 
 
+def geolocate(event):
+    log.info('parsing transcriptions')
+    bounds = {
+        'hunterdon': [(-75.3199348684483,40.75823811169378), (-74.61330674375678,40.34974907331191)],
+        'morris': [(-74.95349930842227,41.03973731989822), (-74.18804986518307,40.66243060070209)],
+        'warren': [(-75.34714596046982,41.06402566152515), (-74.67510691546788,40.62637616797859)],
+        'sussex': [(-75.05845242057806,41.36071447694682), (-74.29917269700853,40.94262863833735)],
+    }
+
+    location = f"{event['address']}, {event['town']}, NJ"
+    try:
+        loc = geoloc.geocode(location, exactly_one=True, bounds=bounds[event['county']])
+        print(loc.raw['geometry']['location_type'], loc.address)
+        print(f'https://maps.google.com/?q={loc.latitude},{loc.longitude}')
+        print(event['transcription'])
+        print('---')
+    except geopy.exc.GeocoderException:
+        pass
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Grab and transcribe scanner traffic")
     parser.add_argument('--fullparse', action='store_true', help="Enable full parsing mode")
-    parser.add_argument('--justparse', action='store_true', help="Just run parsing")
     args = parser.parse_args()
 
-    if not args.justparse:
+    if not args.fullparse:
         get_mp3s()
         download_and_transcribe()
     parse_transcriptions(all_events=args.fullparse)
+
     sys.exit(0)
