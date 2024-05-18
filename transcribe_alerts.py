@@ -123,7 +123,6 @@ def download_and_transcribe():
 
 def parse_transcriptions(all_events):
     log.info('parsing transcriptions')
-    fix_columns()
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
     age_to_int = {
@@ -262,6 +261,16 @@ def parse_transcriptions(all_events):
                     address = address.replace('for', '4')
                 event['address'] = address
                 event['town'] = morris_match.group('town')
+
+                if not all_events:
+                    gpt_parse_results = gpt_parse(event)
+                    if gpt_parse_results['gpt_full_address']:
+                        geoloc_results = geolocate(event['county'], gpt_parse_results['gpt_full_address'])
+                    else:
+                        geoloc_results = geolocate(event['county'], f"{event['address']}, {event['town']}, NJ")
+                    event.update(gpt_parse_results)
+                    event.update(geoloc_results)
+
                 event['is_parsed'] = True
                 update_rows.append(event)
                 continue
