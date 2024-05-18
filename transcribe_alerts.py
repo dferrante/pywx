@@ -342,7 +342,7 @@ def geolocate(county, full_address):
             'gmaps_address': loc.address,
             'gmaps_types': ', '.join(loc.raw['types']),
             'gmaps_location_type': loc.raw['geometry']['location_type'],
-            'gmaps_url': f'https://maps.google.com/?q={loc.latitude},{loc.longitude}',
+            'gmaps_url': f'https://maps.google.com/?t=k&q={loc.latitude},{loc.longitude}',
             'gmaps_parsed': True,
         }
     except geopy.exc.GeocoderException:
