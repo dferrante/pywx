@@ -8,10 +8,11 @@ import sys
 import tempfile
 
 import dataset
+import geopy
 import requests
 from faster_whisper import WhisperModel
-from geopy.geocoders import GoogleV3
-from sqlalchemy import Text
+from openai import OpenAI
+from sqlalchemy import Text, Boolean, Integer
 
 from logger import get_logger
 from spelling_correct import spelling_correct
@@ -25,15 +26,27 @@ except ImportError:
     log.error('cant import local_config.py')
     sys.exit(-1)
 
-geoloc = GoogleV3(api_key=config['youtube_key'])
+geoloc = geopy.geocoders.GoogleV3(api_key=config['youtube_key'])
+
+
+def fix_columns():
+    database = dataset.connect(config['alerts_database'])
+    event_table = database['scanner']
+    for col in ['original_transcription', 'gpt_full_address', 'gpt_incident_details', 'gmaps_types', 'gmaps_address', 'gpt_city', 'gpt_incident_subtype', 'gmaps_location_type', 'gmaps_url', 'gpt_age', 'gpt_gender', 'gpt_incident_type']:
+        if col not in event_table.columns:
+            event_table.create_column(col, Text)
+    for col in ['gmaps_parsed', 'gpt_parsed']:
+        if col not in event_table.columns:
+            event_table.create_column(col, Boolean)
+    for col in ['gmaps_latitude', 'gmaps_longitude']:
+        if col not in event_table.columns:
+            event_table.create_column(col, Integer)
 
 
 def get_mp3s():
     log.info('getting mp3s')
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
-    if 'original_transcription' not in event_table.columns:
-        event_table.create_column('original_transcription', Text)
 
     for county in ['hunterdon', 'morris', 'warren', 'sussex']:
         mp3s = []
@@ -110,6 +123,7 @@ def download_and_transcribe():
 
 def parse_transcriptions(all_events):
     log.info('parsing transcriptions')
+    fix_columns()
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
     age_to_int = {
@@ -296,6 +310,14 @@ def parse_transcriptions(all_events):
                     event['gender'] = symptom_match.group('gender')
                 break
 
+        if not all_events:
+            gpt_parse_results = gpt_parse(event)
+            if gpt_parse_results['gpt_full_address']:
+                geoloc_results = geolocate(event['county'], gpt_parse_results['gpt_full_address'])
+            else:
+                geoloc_results = geolocate(event['county'], f"{event['address']}, {event['town']}, NJ")
+            event.update(gpt_parse_results)
+            event.update(geoloc_results)
         event['is_parsed'] = True
         update_rows.append(event)
 
@@ -304,8 +326,7 @@ def parse_transcriptions(all_events):
     log.info('done')
 
 
-def geolocate(event):
-    log.info('parsing transcriptions')
+def geolocate(county, full_address):
     bounds = {
         'hunterdon': [(-75.3199348684483,40.75823811169378), (-74.61330674375678,40.34974907331191)],
         'morris': [(-74.95349930842227,41.03973731989822), (-74.18804986518307,40.66243060070209)],
@@ -313,15 +334,57 @@ def geolocate(event):
         'sussex': [(-75.05845242057806,41.36071447694682), (-74.29917269700853,40.94262863833735)],
     }
 
-    location = f"{event['address']}, {event['town']}, NJ"
     try:
-        loc = geoloc.geocode(location, exactly_one=True, bounds=bounds[event['county']])
-        print(loc.raw['geometry']['location_type'], loc.address)
-        print(f'https://maps.google.com/?q={loc.latitude},{loc.longitude}')
-        print(event['transcription'])
-        print('---')
+        loc = geoloc.geocode(full_address, exactly_one=True, bounds=bounds[county])
+        return {
+            'gmaps_latitude': loc.latitude,
+            'gmaps_longitude': loc.longitude,
+            'gmaps_address': loc.address,
+            'gmaps_types': ', '.join(loc.raw['types']),
+            'gmaps_location_type': loc.raw['geometry']['location_type'],
+            'gmaps_url': f'https://maps.google.com/?q={loc.latitude},{loc.longitude}',
+            'gmaps_parsed': True,
+        }
     except geopy.exc.GeocoderException:
-        pass
+        return {}
+
+
+def gpt_parse(event):
+    responding = ', '.join(event['responding'].split(','))
+    GPT_MODEL = 'gpt-4o'
+    system_prompt = """Your goal is to take the transcription of an ems and fire dept call from NJ, and separate out the full address and include the state, what the incident is about, the age, and gender, all in unique fields, and return it in json format.  be succinct. if fields cannot be found, return null.  fields should be: 'full_address', 'incident_type', 'incident_subtype', 'age', 'gender', 'city', and 'incident_details'.  incident_type field should be all lowercase and should be one of: medical, fire, accident, fall victim, police, or other.  fall victims also include people needing a lift assist.  incident_subtype should be a concise short simple one or two word string about the type of the incident if it is medical.  incident_details field should have a summary of any information about the incident, and should omit hours, address, and responding stations.  if the city is not found, derive it from the responding station.  do not include cross streets.  city should be in full_address and also in its own field. the output should be json with no markdown, and prefix the json keys with 'gpt_'"""
+    event_text = f"Responding stations: {responding}\nTranscription: {event['transcription']}"
+
+    client = OpenAI(api_key=config['openai_key'])
+    response = client.chat.completions.create(model=GPT_MODEL, response_format={"type": "json_object"}, messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": event_text}])
+    summary = response.choices[0].message.content
+    summary = json.loads(summary)
+    summary['gpt_parsed'] = True
+    return summary
+
+
+def gpt_parse_bulk():
+    database = dataset.connect(config['alerts_database'])
+    event_table = database['scanner']
+    system_prompt = """Your goal is to take the transcription of an ems and fire dept call from NJ, and separate out the full address and include the state, what the incident is about, the age, and gender, all in unique fields, and return it in json format.  be succinct. if fields cannot be found, return null.  fields should be: 'full_address', 'incident_type', 'incident_subtype', 'age', 'gender', 'city', and 'incident_details'.  incident_type field should be all lowercase and should be one of: medical, fire, accident, fall victim, police, or other.  fall victims also include people needing a lift assist.  incident_subtype should be a concise short simple one or two word string about the type of the incident if it is medical.  incident_details field should have a summary of any information about the incident, and should omit hours, address, and responding stations.  if the city is not found, derive it from the responding station.  do not include cross streets.  city should be in full_address and also in its own field. the output should be json with no markdown, and prefix the json keys with 'gpt_'"""
+
+    with open('data/events.jsonl', 'w') as f:
+        for event in event_table.all():
+            responding = ', '.join(event['responding'].split(','))
+            event_text = f"Responding stations: {responding}\nTranscription: {event['transcription']}"
+            line = {
+                "custom_id": f"{event['id']}",
+                "method": "POST",
+                "url": "/v1/chat/completions",
+                "body": {
+                    "model": 'gpt-4o',
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": event_text}
+                    ],
+                }
+            }
+            f.write(json.dumps(line) + '\n')
 
 
 if __name__ == '__main__':
@@ -333,5 +396,9 @@ if __name__ == '__main__':
         get_mp3s()
         download_and_transcribe()
     parse_transcriptions(all_events=args.fullparse)
+
+    # database = dataset.connect(config['alerts_database'])
+    # event_table = database['scanner']
+    # print(gpt_parse(event_table.find_one(id=12845)))
 
     sys.exit(0)
