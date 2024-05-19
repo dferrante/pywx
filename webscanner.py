@@ -24,6 +24,41 @@ very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apol
 important_words = ['clinton', 'annandale', 'school']
 
 counties = ['hunterdon', 'warren', 'morris', 'sussex']
+incident_emojis = {
+    'fire': '🔥',
+    'medical': '🚑',
+    'accident': '⛐',
+    'police': '🚓',
+    'fall victim': '🤕',
+}
+subtype_emojis = {
+    'sick': '🤒',
+    'breathing': '🫁',
+    'resperatory': '🫁',
+    'chest pain': '💔',
+    'cardiac': '💔',
+    'unconscious': '😵',
+    'stroke': '🧠',
+    'seizure': '🧠',
+    'trauma': '🩹',
+    'fall': '🤕',
+    'unresponsive': '😵',
+    'unconscious': '😵',
+    'overdose': '💊',
+    'psych': '🧠',
+    'heart': '💔',
+    'diabetic': '🩸',
+    'bleeding': '🩸',
+    'burn': '🔥',
+    'choking': '🤢',
+    'drowning': '🌊',
+    'electrocution': '⚡',
+    'alarm': '🚨',
+    'fire': '🔥',
+    'altered': '🧠',
+    'pain': '🤕',
+    'weakness': '🤕',
+}
 
 
 def irc_color(value, color):
@@ -79,12 +114,22 @@ def list():
         else:
             transcription = event['transcription']
 
+        subtype_emojis_list = []
+        if event['gpt_incident_subtype']:
+            for subtype in event['gpt_incident_subtype'].split(' '):
+                subtype_emojis_list.append(subtype_emojis.get(subtype))
+            subtype_emojis_list = [emoji for emoji in subtype_emojis_list if emoji]
+
+        incident_emoji = incident_emojis.get(event.get('gpt_incident_type')) if event.get('gpt_incident_type') else ''
+
         payload = {
             'datetime': time,
             'responding': responding,
             'vip_word_color': vip_word_color,
             'transcription': Markup(transcription),
             'event': event,
+            'incident_emoji': incident_emoji,
+            'subtype_emojis': subtype_emojis_list,
         }
 
         if event['address'] and event['town']:

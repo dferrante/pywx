@@ -3,7 +3,6 @@
         <title>{% block title %}Fire/EMS Alerts{% endblock %}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-        <meta http-equiv="refresh" content="60" />
 
         <style>
             body {
@@ -29,7 +28,17 @@
             a:active {
                 text-decoration: underline;
             }
+            div.emoji {
+                font-size: 200%;
+                margin-left: 1.5em;
+                float: left;
+            }
             div.transcription {
+                margin-top: 2em;
+                margin-left: 2.5em;
+                margin-bottom: 1em;
+            }
+            div.gmaps_embed {
                 margin-left: 2.5em;
                 margin-bottom: 1em;
             }
@@ -47,6 +56,14 @@
                 background-color: #262626;
                 border: 1px solid white;
                 color: white;
+            }
+            .map-iframe {
+                width: 800;  /* Default width */
+            }
+            @media only screen and (max-width: 400px) {
+                .map-iframe {
+                    width: 380px;  /* Width on mobile */
+                }
             }
         </style>
     </head>

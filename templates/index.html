@@ -8,15 +8,16 @@
                 <a href="{{ event['event']['mp3_url'] }}" target="_blank" rel="noopener noreferrer">{{ 'mp3'|c('#1b88b3') }}</a>
         </div>
 
-
         <div class="responding">
             <div>
-                {% if event['full_address'] %}
+                {% if event.event['gmaps_url'] %}
+                    <a class="address" href="{{ event.event['gmaps_url'] }}" target="_blank" rel="noopener noreferrer">{{ event.event['gmaps_address']|c(event['vip_word_color']) }}</a>
+                {% elif event['full_address'] %}
                     <a class="address" href="{{ event['gmaps_url'] }}" target="_blank" rel="noopener noreferrer">{{ event['full_address']|c(event['vip_word_color']) }}</a>
                 {% elif event['event']['town'] %}
                     {{ event['event']['town']|c(event['vip_word_color']) }}
                 {% elif event.address %}
-                    {{ event.address|c('') }}
+                    {{ event.address|c(event['vip_word_color']) }}
                 {% endif %}
             </div>
                 {% for responding in event['responding'] %}
@@ -26,13 +27,35 @@
                 {% endfor %}
         </div>
 
+        <div class="emoji">{{ event['incident_emoji'] }}{% for e in event['subtype_emojis'] %}{{ e }}{% endfor %}</div>
         <div class="transcription">
-            {{ event['transcription']|highlight(event['event']['symptom']) }}
+            {% if event.event['gpt_age'] or event.event['gpt_gender'] %}
+                {% if event.event['gpt_age'] %}{{ event.event['gpt_age'] }}yo{% endif %}
+                {% if event.event['gpt_gender'] %}{{ event.event['gpt_gender'] }}{% endif %}
+                -
+            {% endif %}
+            {{ event.event['gpt_incident_details'] }}
         </div>
 
-        <div>
+        <div class="transcription" style="display: none;">
+                {{ event['transcription']|highlight(event['event']['symptom']) }}
         </div>
 
-        <div>-------------</div>
+        <div class="gmaps_embed">
+            {% if events|length == 1 %}
+                <iframe
+                    class="map_iframe"
+                    height="450"
+                    style="border:0"
+                    loading="lazy"
+                    allowfullscreen
+                    src="https://www.google.com/maps/embed/v1/place?key=AIzaSyCzIwYzjY6lxVm6Y0JE2HILFhWROYgSWl8&maptype=satellite&q={{ event['event']['gmaps_latitude'] }},{{ event['event']['gmaps_longitude'] }}">
+                </iframe>
+            {% endif %}
+        </div>
+
+        {% if events|length != 1 %}
+            <div>-------------</div>
+        {% endif %}
     {% endfor %}
 {% endblock %}
