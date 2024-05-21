@@ -3,6 +3,7 @@
         <title>{% block title %}Fire/EMS Alerts{% endblock %}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+        <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
 
         <style>
             body {
@@ -10,6 +11,14 @@
                 font-family: monospace;
                 color: #cccccc;
                 margin: 1em;
+            }
+            span.link {
+                color: #3c99cf;
+                cursor: pointer;
+            }
+            span.link_active {
+                color: #fa7516;
+                cursor: pointer;
             }
             a.address {
                 color: #3c99cf;
@@ -32,6 +41,7 @@
                 font-size: 200%;
                 margin-left: 1.5em;
                 float: left;
+                margin-right: 0.3em;
             }
             div.transcription {
                 margin-top: 2em;
@@ -45,14 +55,15 @@
             div.responding {
                 margin: 1em;
             }
-            a.datetime {
+            span.datetime {
                 color: #a47fd4;
                 font-size: 120%;
+                cursor: pointer;
             }
             form.search {
                 display: inline;
             }
-            input[type=text] {
+            input[type=search] {
                 background-color: #262626;
                 border: 1px solid white;
                 color: white;
@@ -65,34 +76,41 @@
                     width: 380px;  /* Width on mobile */
                 }
             }
+            table.datatable {
+                border-collapse: collapse;
+                width: 100%;
+                margin-left: 2.5em;
+                margin-top: 1em;
+            }
+            table.datatable td {
+                padding-right: 3em;
+                padding-bottom: 0.3em;
+            }
         </style>
     </head>
     <body>
         <div>
-            <a href="/">
-                <span style="color: {% if request.args.get('county') == None %}#fa7516{% else %}#3c99cf{% endif %}">all</span>
-            </a> -
+            <span id="county-all" class="link_active" hx-get="/events" hx-target="#content" hx-swap-oob="true" hx-push-url="/">all</span> -
             {% for county in counties %}
-                <a href="{% if request.args.get('county') == county %}/{% else %}/?county={{ county }}{% endif %}">{% if request.args.get('county') == county %}<span style="color: #fa7516">{% endif %}{{ county }}{% if request.args.get('county') == county %}</span>{% endif %}</a>
+                <span id="county-{{ county }}" class="link" hx-get="/?county={{ county }}" hx-target="#content" hx-swap-oob="true" hx-push-url="/?county={{ county }}">{{ county }}</span>
                 {% if loop.revindex != 1 %} - {% endif %}
             {% endfor %}
              |
-            <a href="/stations">
-                {% if request.path == '/stations' %}<span style="color: #fa7516">{% endif %}station list{% if request.path == '/stations' %}</span>{% endif %}</a>
-            {% if request.args.get('station') %}<span style="color: #fa7516">[{{ request.args.get('station') }}]</span>{% endif %}
+            <span id="stations" class="link" hx-get="/stations" hx-target="#content" hx-swap-oob="true">station list</span>
              |
-             <a href="/towns">
-                {% if request.path == '/towns' %}<span style="color: #fa7516">{% endif %}town list{% if request.path == '/towns' %}</span>{% endif %}</a>
-             {% if request.args.get('town') %}<span style="color: #fa7516">[{{ request.args.get('town') }}]</span>{% endif %}
-              |
+            <span id="towns" class="link" hx-get="/towns" hx-target="#content" hx-swap-oob="true">town list</span>
+             |
             search:
-            <form class="search" action="/">
-                <input type="text" id="search" name="search" {% if request.args.get('search') %}value="{{ request.args.search }}"{% endif %}>
-                {% if request.args.get('station') %}<input type="hidden" name="station" value="{{ request.args.get('station') }}">{% endif %}
-                {% if request.args.get('county') %}<input type="hidden" name="county" value="{{ request.args.get('county') }}">{% endif %}
-            </form>
+            <input id="search" class="form-control" type="search"
+                name="search" placeholder=""
+                hx-get="/events"
+                hx-trigger="input changed delay:500ms, search"
+                hx-target="#content"
+                hx-vals='{{ request.args|tojson }}'
+                hx-swap-oob="true">
         <div>
         <br>
-        {% block body %}{% endblock %}
+        <div id="content" class="content" hx-trigger="load" hx-get="/events" placeholder="Loading..." hx-vals='{{ request.args|tojson }}'>
+        </div>
     </body>
 </html>

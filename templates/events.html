@@ -1,0 +1,87 @@
+<span id="county-all" class="link{% if request.args.get('county') == None %}_active{% endif %}" hx-get="/events" hx-target="#content" hx-swap-oob="true" hx-push-url="/">all</span>
+{% for county in counties %}
+    <span id="county-{{ county }}" class="link{% if request.args.get('county') == county %}_active{% endif %}" hx-get="/events?county={{ county }}" hx-target="#content" hx-swap-oob="true" hx-push-url="/?county={{ county }}">{{ county }}</span>
+{% endfor %}
+
+{% if request.args.get('station') %}
+    <span id="stations" class="link_active" hx-get="/stations" hx-target="#content" hx-swap-oob="true">station list [{{ request.args.get('station') }}]</span>
+{% else %}
+    <span id="stations" class="link" hx-get="/stations" hx-target="#content" hx-swap-oob="true">station list</span>
+{% endif %}
+
+{% if request.args.get('town') %}
+    <span id="towns" class="link_active" hx-get="/towns" hx-target="#content" hx-swap-oob="true">town list [{{ request.args.get('town') }}]</span>
+{% else %}
+    <span id="towns" class="link" hx-get="/towns" hx-target="#content" hx-swap-oob="true">town list</span>
+{% endif %}
+
+{% for event in events %}
+    <div>
+        <span class="datetime" hx-get="/events?id={{ event['event']['id'] }}" hx-target="#content" hx-push-url="/?id={{ event.event.id }}" hx-swap="show:window:top">{{ event['datetime'] }}</span>
+            -
+        <a href="{{ event['event']['mp3_url'] }}" target="_blank" rel="noopener noreferrer">{{ 'mp3'|c('#1b88b3') }}</a>
+    </div>
+
+    <div class="responding">
+        <div>
+            {% if event.event['gmaps_url'] %}
+                <a class="address" href="{{ event.event['gmaps_url'] }}" target="_blank" rel="noopener noreferrer">{{ event.location_emoji }} {{ event.event['gmaps_address']|c(event['vip_word_color']) }}</a>
+            {% elif event['full_address'] %}
+                <a class="address" href="{{ event['gmaps_url'] }}" target="_blank" rel="noopener noreferrer">{{ event['full_address']|c(event['vip_word_color']) }}</a>
+            {% elif event['event']['town'] %}
+                {{ event['event']['town']|c(event['vip_word_color']) }}
+            {% elif event.address %}
+                {{ event.address|c(event['vip_word_color']) }}
+            {% endif %}
+        </div>
+            {% for responding in event['responding'] %}
+                <div style="white-space: nowrap">
+                    - <a href="?station={{ responding }}">{{ responding|station_highlight }}</a>
+                </div>
+            {% endfor %}
+    </div>
+
+    {% if event.event['gpt_incident_details'] %}
+        <div class="emoji">{% for emoji in event['emojis'] %}{{ emoji }}{% endfor %}</div>
+        <div class="transcription">
+            {% if event.age_and_gender %}
+                {{ event.age_and_gender }} -
+            {% endif %}
+            {{ event.event['gpt_incident_details'] }}
+        </div>
+    {% else %}
+        <div class="transcription">
+                {{ event['transcription']|highlight(event['event']['symptom']) }}
+        </div>
+    {% endif %}
+
+    {% if events|length == 1 %}
+        <div class="transcription">
+                {{ event['transcription']|highlight(event['event']['symptom']) }}
+        </div>
+        <div>-----------------------</div>
+        <div class="gmaps_embed">
+                <iframe
+                    class="map_iframe"
+                    height="450"
+                    width="800"
+                    style="border:0;margin-top:1em;"
+                    loading="lazy"
+                    allowfullscreen
+                    src="https://www.google.com/maps/embed/v1/place?key=AIzaSyCzIwYzjY6lxVm6Y0JE2HILFhWROYgSWl8&maptype=satellite&q={{ event['event']['gmaps_latitude'] }},{{ event['event']['gmaps_longitude'] }}">
+                </iframe>
+        </div>
+        <div>-----------------------</div>
+        <table class="datatable">
+                {% for k,v in event.event|dictsort(true) %}
+                <tr>
+                    <td>{{ k }}</td><td>{{ v }}</td>
+                </tr>
+                {% endfor %}
+        </table>
+    {% endif %}
+
+    {% if events|length != 1 %}
+        <div>-------------</div>
+    {% endif %}
+{% endfor %}

@@ -1,18 +1,14 @@
-{% extends "base.html" %}
+<span id="stations" class="span_active" hx-get="/stations" hx-target="#content" hx-swap-oob="true">stations</span>
 
-{% block title %}Fire/EMS Alerts - Station List{% endblock %}
-
-{% block body %}
-    {% for county in counties %}
-        <b>{{ county }}:</b><br>
-        <table>
-        {% for station in county_station[county] %}
-            <tr>
-                <td><a href="/?station={{ station[0] }}">{{ station[0] }}</a></td>
-                <td>[{{ station[1] }}]</td>
-            </tr>
-        {% endfor %}
-        </table>
-        <br>
+{% for county in counties %}
+    <b>{{ county }}:</b><br>
+    <table>
+    {% for station in county_station[county] %}
+        <tr>
+            <td><span class="link" hx-get="/events?station={{ station[0] }}" hx-target="#content">{{ station[0] }}</span></td>
+            <td>[{{ station[1] }}]</td>
+        </tr>
     {% endfor %}
-{% endblock %}
+    </table>
+    <br>
+{% endfor %}

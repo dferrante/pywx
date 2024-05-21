@@ -1,25 +1,14 @@
-{% extends "base.html" %}
+<span id="towns" class="span_active" hx-get="/towns" hx-target="#content" hx-swap-oob="true">town list</span>
 
-{% block title %}Fire/EMS Alerts - Town List{% endblock %}
-
-{% block body %}
-<script>
-    function copyTextToClipboard(text) {
-        navigator.clipboard.writeText(text)
-    }
-</script>
-
-    {% for county in counties %}
-        <b>{{ county }}:</b><br>
-        <table>
-        {% for town in county_towns[county] %}
-            <tr>
-                <td><a href="/?town={{ town[0] }}">{{ town[0] }}</a></td>
-                <td>[{{ town[1] }}]</td>
-                <td><button onclick="copyTextToClipboard('{{ town[0] }}')">copy</button></td>
-            </tr>
-        {% endfor %}
-        </table>
-        <br>
+{% for county in counties %}
+    <b>{{ county }}:</b><br>
+    <table>
+    {% for town in county_towns[county] %}
+        <tr>
+            <td><span class="link" hx-get="/events?town={{ town[0] }}" hx-target="#content">{{ town[0] }}</span></td>
+            <td>[{{ town[1] }}]</td>
+        </tr>
     {% endfor %}
-{% endblock %}
+    </table>
+    <br>
+{% endfor %}

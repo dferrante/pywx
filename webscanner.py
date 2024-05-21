@@ -29,7 +29,8 @@ incident_emojis = {
     'medical': '🚑',
     'accident': '⛐',
     'police': '🚓',
-    'fall victim': '🤕',
+    'fall victim': '👇🤕',
+    'other': '🚨',
 }
 subtype_emojis = {
     'sick': '🤒',
@@ -41,7 +42,7 @@ subtype_emojis = {
     'stroke': '🧠',
     'seizure': '🧠',
     'trauma': '🩹',
-    'fall': '🤕',
+    'fall': '👇🤕',
     'unresponsive': '😵',
     'unconscious': '😵',
     'overdose': '💊',
@@ -58,6 +59,16 @@ subtype_emojis = {
     'altered': '🧠',
     'pain': '🤕',
     'weakness': '🤕',
+    'landing': '🚁',
+    'rectal': '🍑',
+    'bleed': '🩸',
+}
+
+location_type_emojis = {
+    'ROOFTOP': '📍',
+    'RANGE_INTERPOLATED': '',
+    'GEOMETRIC_CENTER': '',
+    'APPROXIMATE': '',
 }
 
 
@@ -66,6 +77,11 @@ def irc_color(value, color):
 
 
 @app.route("/")
+def index():
+    return render_template('base.html', counties=counties, request=request)
+
+
+@app.route("/events")
 def list():
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
@@ -114,13 +130,23 @@ def list():
         else:
             transcription = event['transcription']
 
-        subtype_emojis_list = []
+        emojis = set()
+        if incident_emojis.get(event.get('gpt_incident_type')):
+            emojis.add(incident_emojis.get(event['gpt_incident_type']))
         if event['gpt_incident_subtype']:
             for subtype in event['gpt_incident_subtype'].split(' '):
-                subtype_emojis_list.append(subtype_emojis.get(subtype))
-            subtype_emojis_list = [emoji for emoji in subtype_emojis_list if emoji]
+                emojis.add(subtype_emojis.get(subtype))
+        emojis = filter(None, emojis)
 
-        incident_emoji = incident_emojis.get(event.get('gpt_incident_type')) if event.get('gpt_incident_type') else ''
+        location_emoji = location_type_emojis.get(event.get('gmaps_location_type'), '')
+
+        age_and_gender = []
+        if event['gpt_incident_details']:
+            if event['gpt_age'] and event['gpt_age'] not in event['gpt_incident_details']:
+                age_and_gender.append(event['gpt_age'] + 'yo' if 'mo' not in event['gpt_age'] else event['gpt_age'])
+            if event['gpt_gender'] and event['gpt_gender'] not in event['gpt_incident_details']:
+                age_and_gender.append(event['gpt_gender'])
+        age_and_gender = ' '.join(age_and_gender)
 
         payload = {
             'datetime': time,
@@ -128,8 +154,9 @@ def list():
             'vip_word_color': vip_word_color,
             'transcription': Markup(transcription),
             'event': event,
-            'incident_emoji': incident_emoji,
-            'subtype_emojis': subtype_emojis_list,
+            'emojis': emojis,
+            'location_emoji': location_emoji,
+            'age_and_gender': age_and_gender,
         }
 
         if event['address'] and event['town']:
@@ -140,7 +167,7 @@ def list():
 
         events.append(payload)
 
-    return render_template('index.html', events=events, counties=counties, request=request, event_count=event_count)
+    return render_template('events.html', events=events, counties=counties, request=request, event_count=event_count)
 
 
 @app.route('/stations')
