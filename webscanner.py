@@ -71,6 +71,16 @@ location_type_emojis = {
     'APPROXIMATE': '',
 }
 
+all_fields = ['id', 'transcription', 'county', 'datetime', 'responding', 'mp3_url', 'is_transcribed', 'age', 'gender', 'town', 'address', 'symptom', 'is_irc_notified', 'original_transcription', 'is_parsed', 'gpt_full_address', 'gpt_incident_details', 'gmaps_types', 'gmaps_address', 'gpt_city', 'gpt_incident_subtype', 'gmaps_location_type', 'gmaps_url', 'gpt_age', 'gpt_gender', 'gpt_incident_type', 'gmaps_parsed', 'gpt_parsed', 'gmaps_latitude', 'gmaps_longitude', 'gpt_place']
+
+metadata_order = {
+    '': ['id', 'datetime', 'county', 'responding'],
+    'incident': ['gpt_incident_type', 'gpt_incident_subtype', 'gpt_incident_details', 'symptom'],
+    'location': ['gpt_place', 'gmaps_address', 'gpt_full_address', 'address', 'gmaps_types', 'gmaps_location_type','gmaps_latitude', 'gmaps_longitude', 'gpt_city', 'town'],
+    'person': ['age', 'gender', 'gpt_age', 'gpt_gender'],
+    'transcription': ['transcription', 'original_transcription'],
+}
+
 
 def irc_color(value, color):
     return Markup(f'<span style="color: {color};">{value}</span>')
@@ -167,7 +177,7 @@ def list():
 
         events.append(payload)
 
-    return render_template('events.html', events=events, counties=counties, request=request, event_count=event_count)
+    return render_template('events.html', events=events, counties=counties, request=request, event_count=event_count, metadata_order=metadata_order)
 
 
 @app.route('/stations')

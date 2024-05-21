@@ -24,8 +24,12 @@
 
     <div class="responding">
         <div>
+            {{ event.location_emoji }}
+            {% if event.event['gpt_place'] %}
+                {{ event.event['gpt_place']|c(event['vip_word_color']) }} -
+            {% endif %}
             {% if event.event['gmaps_url'] %}
-                <a class="address" href="{{ event.event['gmaps_url'] }}" target="_blank" rel="noopener noreferrer">{{ event.location_emoji }} {{ event.event['gmaps_address']|c(event['vip_word_color']) }}</a>
+                <a class="address" href="{{ event.event['gmaps_url'] }}" target="_blank" rel="noopener noreferrer">{{ event.event['gmaps_address']|c(event['vip_word_color']) }}</a>
             {% elif event['full_address'] %}
                 <a class="address" href="{{ event['gmaps_url'] }}" target="_blank" rel="noopener noreferrer">{{ event['full_address']|c(event['vip_word_color']) }}</a>
             {% elif event['event']['town'] %}
@@ -72,13 +76,20 @@
                 </iframe>
         </div>
         <div>-----------------------</div>
-        <table class="datatable">
-                {% for k,v in event.event|dictsort(true) %}
-                <tr>
-                    <td>{{ k }}</td><td>{{ v }}</td>
-                </tr>
+            {% for heading, keys in metadata_order.items() %}
+            <table class="datatable">
+                {% if heading %}
+                    <tr>
+                        <td colspan="2" style="border-bottom: 1px #fff;">{{ heading }}</td>
+                    </tr>
+                {% endif %}
+                {% for key in keys %}
+                    <tr>
+                        <td>{{ key }}</td><td>{{ event.event[key] }}</td>
+                    </tr>
                 {% endfor %}
-        </table>
+            </table>
+            {% endfor %}
     {% endif %}
 
     {% if events|length != 1 %}
