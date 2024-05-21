@@ -40,6 +40,8 @@ def irc_color(value, color, nulled=True, bold=False, italics=False, reset=False,
     italics = cmap['italic'] if italics else ''
     reset = cmap['reset'] if reset else ''
     underline = cmap['underline'] if underline else ''
+    if not color_code:
+        nulled = ""
     return f"{bold}{italics}{underline}{color_code}{value}{nulled}{reset}{bold}{italics}{underline}"
 
 
@@ -82,11 +84,12 @@ class Command(object):
 
     def __init__(self, config):
         self.config = config
-        self.environment = Environment()
+        self.environment = Environment(autoescape=True)
         self.max_msg_length = self.config.get('max_msg_length', MAX_MSG_LEN)
         self.load_filters()
 
     def load_filters(self):
+        self.environment = Environment(autoescape=True)
         self.environment.filters['c'] = irc_color
         self.environment.filters['tc'] = lambda v: irc_color(v, 'royal')
         self.environment.filters['nc'] = lambda v: irc_color(v, 'orange')

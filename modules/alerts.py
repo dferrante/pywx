@@ -17,7 +17,7 @@ class Scanner(base.Command):
     multiline = True
     template = """-------------
         {{ datetime|c('royal') }} - {{ event['county']|c(county_color) }} - {{ responding|c(station_color) }} - {{ event.id }}
-        {% if event['gmaps_address'] %} {{ event['gmaps_address']|c(vip_word_color) }} {% elif full_address %} {{ full_address|c(vip_word_color) }} {% elif event.town %} {{ event.town|c(vip_word_color) }} {% elif event.address %} {{ event.address|c(vip_word_color) }} {% endif %}
+        {% if event['gpt_place'] %}{{ event['gpt_place']|c(event['vip_word_color']) }} - {% endif %}{% if event['gmaps_address'] %} {{ event['gmaps_address']|c(vip_word_color) }} {% elif full_address %} {{ full_address|c(vip_word_color) }} {% elif event.town %} {{ event.town|c(vip_word_color) }} {% elif event.address %} {{ event.address|c(vip_word_color) }} {% endif %}
         {{ scanner_url }}
         {% if event['gpt_age'] or event['gpt_gender'] %} {% if event['gpt_age'] %} {{ event['gpt_age'] }}yo {% endif %} {% if event['gpt_gender'] %} {{ event['gpt_gender'] }} {% endif %} - {% endif %} {% if event['gpt_incident_details'] %} {{ event['gpt_incident_details'] }} ({{ event['gpt_incident_type'] }}{% if event['gpt_incident_subtype'] %}-{{ event['gpt_incident_subtype'] }}{% endif %}){% endif %}"""
 

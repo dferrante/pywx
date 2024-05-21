@@ -121,6 +121,8 @@ def list():
             default_search['county'] = {'ilike': f'%{request.args["county"]}%'}
         if request.args.get('town'):
             default_search['town'] = request.args["town"]
+        if request.args.get('place'):
+            default_search['gpt_place'] = {'ilike': f'%{request.args["place"]}%'}
 
         event_query = event_table.find(**default_search)
         event_count = event_table.count(**default_search)

@@ -26,7 +26,7 @@
         <div>
             {{ event.location_emoji }}
             {% if event.event['gpt_place'] %}
-                {{ event.event['gpt_place']|c(event['vip_word_color']) }} -
+                <span class="address" hx-get="/events?place={{ event.event.gpt_place }}" hx-target="#content" hx-push-url="/?place={{ event.event.gpt_place }}" hx-swap="show:window:top">{{ event.event['gpt_place']|c(event['vip_word_color']) }}</span> -
             {% endif %}
             {% if event.event['gmaps_url'] %}
                 <a class="address" href="{{ event.event['gmaps_url'] }}" target="_blank" rel="noopener noreferrer">{{ event.event['gmaps_address']|c(event['vip_word_color']) }}</a>
