@@ -179,7 +179,7 @@ def list():
 
         events.append(payload)
 
-    return render_template('events.html', events=events, counties=counties, request=request, event_count=event_count, metadata_order=metadata_order)
+    return render_template('events.html', events=events, counties=counties, request=request, event_count=event_count, metadata_order=metadata_order, gmaps_embed_key=config['gmaps_embed_key'])
 
 
 @app.route('/stations')
