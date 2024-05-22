@@ -94,6 +94,9 @@
                 padding-right: 3em;
                 padding-bottom: 0.3em;
             }
+            .pagination {
+                margin: 0.5em;
+            }
         </style>
     </head>
     <body>
@@ -116,9 +119,9 @@
                 hx-target="#content"
                 hx-vals='{{ request.args|tojson }}'
                 hx-swap-oob="true">
-        <div>
         <br>
-        <div id="content" class="content" hx-trigger="load" hx-get="/events" placeholder="Loading..." hx-vals='{{ request.args|tojson }}'>
-        </div>
+        <div id="pagination" class="pagination" hx-swap-oob="true"></div>
+        <div id="content" class="content" hx-trigger="load" hx-get="/events" placeholder="Loading..." hx-vals='{{ request.args|tojson }}'></div>
+        <div id="pagination_end" class="pagination" hx-swap-oob="true"></div>
     </body>
 </html>

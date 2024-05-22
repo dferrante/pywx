@@ -102,16 +102,14 @@ def list():
     environment.filters['station_highlight'] = lambda station: irc_color(station, 'red') if any([important_station in station.lower() for important_station in important_stations]) else irc_color(station, '#fa7516')
 
     page = int(request.args.get('page', 1))
+    per_page = 20
     event_query = []
     if request.args.get('id'):
         event_query = event_table.find(id=request.args['id'])
-        event_count = False
+        event_count = 1
     else:
         default_search = {
             'is_transcribed': True,
-            'order_by': ['-datetime'],
-            '_limit': 100,
-            '_offset': (page - 1) * 100
         }
         if request.args.get('search'):
             default_search['transcription'] = {'ilike': f'%{request.args["search"]}%'}
@@ -124,8 +122,15 @@ def list():
         if request.args.get('place'):
             default_search['gpt_place'] = {'ilike': f'%{request.args["place"]}%'}
 
-        event_query = event_table.find(**default_search)
         event_count = event_table.count(**default_search)
+        default_search['_limit'] = per_page
+        default_search['_offset'] = (page - 1) * per_page
+        default_search['order_by'] = ['-datetime']
+        event_query = event_table.find(**default_search)
+
+    prev_page = page - 1 if page > 1 else None
+    next_page = page + 1 if event_count and event_count > page * per_page else None
+    last_page = event_count // per_page + 1
 
     events = []
     for event in event_query:
@@ -179,7 +184,19 @@ def list():
 
         events.append(payload)
 
-    return render_template('events.html', events=events, counties=counties, request=request, event_count=event_count, metadata_order=metadata_order, gmaps_embed_key=config['gmaps_embed_key'])
+    response = {
+        'events': events,
+        'counties': counties,
+        'request': request,
+        'event_count': event_count,
+        'metadata_order': metadata_order,
+        'gmaps_embed_key': config['gmaps_embed_key'],
+        'page': page,
+        'prev_page': prev_page,
+        'next_page': next_page,
+        'last_page': last_page,
+    }
+    return render_template('events.html', **response)
 
 
 @app.route('/stations')

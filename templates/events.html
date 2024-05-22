@@ -15,8 +15,17 @@
     <span id="towns" class="link" hx-get="/towns" hx-target="#content" hx-swap-oob="true">town list</span>
 {% endif %}
 
+<div id="pagination" class="pagination" hx-swap-oob="#pagination">
+    {% if page != 1 %}<span class="link" hx-get="/events?page=1" hx-target="#content" hx-push-url="/?page=1&{{ request.query_string.decode('ascii') }}" hx-vals='{{ request.args|tojson }}'>&lt;&lt;</span>{% endif %}
+    {% if prev_page %}<span class="link" hx-get="/events?page={{ prev_page }}" hx-target="#content" hx-push-url="/?page={{ prev_page }}&{{ request.query_string.decode('ascii') }}" hx-vals='{{ request.args|tojson }}'>&lt;</span>{% endif %}
+    Page {{ page }}
+    {% if next_page %}<span class="link" hx-get="/events?page={{ next_page }}" hx-target="#content" hx-push-url="/?page={{ next_page }}&{{ request.query_string.decode('ascii') }}" hx-vals='{{ request.args|tojson }}'>&gt;</span>{% endif %}
+    {% if last_page %}<span class="link" hx-get="/events?page={{ last_page }}" hx-target="#content" hx-push-url="/?page={{ last_page }}&{{ request.query_string.decode('ascii') }}" hx-vals='{{ request.args|tojson }}'>&gt;&gt;</span>{% endif %}
+    (total: {{ event_count }})
+</div>
+
 {% for event in events %}
-    <div>
+    <div class="event_header">
         <span class="datetime" hx-get="/events?id={{ event['event']['id'] }}" hx-target="#content" hx-push-url="/?id={{ event.event.id }}" hx-swap="show:window:top">{{ event['datetime'] }}</span>
             -
         <a href="{{ event['event']['mp3_url'] }}" target="_blank" rel="noopener noreferrer">{{ 'mp3'|c('#1b88b3') }}</a>
@@ -96,3 +105,12 @@
         <div>-------------</div>
     {% endif %}
 {% endfor %}
+
+<div id="pagination_end" class="pagination" hx-swap-oob="#pagination">
+    {% if page != 1 %}<span class="link" hx-get="/events?page=1" hx-target="#content" hx-push-url="/?page=1&{{ request.query_string.decode('ascii') }}" hx-vals='{{ request.args|tojson }}' hx-swap="show:window:top">&lt;&lt;</span>{% endif %}
+    {% if prev_page %}<span class="link" hx-get="/events?page={{ prev_page }}" hx-target="#content" hx-push-url="/?page={{ prev_page }}&{{ request.query_string.decode('ascii') }}" hx-vals='{{ request.args|tojson }}' hx-swap="show:window:top">&lt;</span>{% endif %}
+    Page {{ page }}
+    {% if next_page %}<span class="link" hx-get="/events?page={{ next_page }}" hx-target="#content" hx-push-url="/?page={{ next_page }}&{{ request.query_string.decode('ascii') }}" hx-vals='{{ request.args|tojson }}' hx-swap="show:window:top">&gt;</span>{% endif %}
+    {% if last_page %}<span class="link" hx-get="/events?page={{ last_page }}" hx-target="#content" hx-push-url="/?page={{ last_page }}&{{ request.query_string.decode('ascii') }}" hx-vals='{{ request.args|tojson }}' hx-swap="show:window:top">&gt;&gt;</span>{% endif %}
+    (total: {{ event_count }})
+</div>
