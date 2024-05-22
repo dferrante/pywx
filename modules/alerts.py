@@ -19,7 +19,7 @@ class Scanner(base.Command):
         {{ datetime|c('royal') }} - {{ event['county']|c(county_color) }} - {{ responding|c(station_color) }} - {{ event.id }}
         {% if event['gpt_place'] %}{{ event['gpt_place']|c(event['vip_word_color']) }} - {% endif %}{% if event['gmaps_address'] %} {{ event['gmaps_address']|c(vip_word_color) }} {% elif full_address %} {{ full_address|c(vip_word_color) }} {% elif event.town %} {{ event.town|c(vip_word_color) }} {% elif event.address %} {{ event.address|c(vip_word_color) }} {% endif %}
         {{ scanner_url }}
-        {% if event['gpt_age'] or event['gpt_gender'] %} {% if event['gpt_age'] %} {{ event['gpt_age'] }}yo {% endif %} {% if event['gpt_gender'] %} {{ event['gpt_gender'] }} {% endif %} - {% endif %} {% if event['gpt_incident_details'] %} {{ event['gpt_incident_details'] }} ({{ event['gpt_incident_type'] }}{% if event['gpt_incident_subtype'] %}-{{ event['gpt_incident_subtype'] }}{% endif %}){% endif %}"""
+        {{ incident_details }}"""
 
     important_stations = ['45fire', '46fire', 'sbes', 'southbranch']
     very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west', 'norma']
@@ -56,6 +56,20 @@ class Scanner(base.Command):
         else:
             transcription = event['transcription']
 
+        age_and_gender = ''
+        if event['gpt_incident_details']:
+            if event['gpt_age'] and event['gpt_age'] not in event['gpt_incident_details']:
+                age_and_gender += f"{event['gpt_age']}yo "
+            if event['gpt_gender'] and event['gpt_gender'] not in event['gpt_incident_details']:
+                age_and_gender += f"{event['gpt_gender']}"
+            if age_and_gender:
+                age_and_gender += " - "
+            subtype = f"/{event['gpt_incident_subtype']}" if event['gpt_incident_subtype'] else ''
+            incident_details = f"{event['gpt_incident_type']}{subtype}: {age_and_gender}{event['gpt_incident_details']}"
+        else:
+            subtype = f"/{event['gpt_incident_subtype']}" if event['gpt_incident_subtype'] else ''
+            incident_details = f"{event['gpt_incident_type']}{subtype}"
+
         payload = {
             'datetime': time,
             'responding': responding,
@@ -64,6 +78,7 @@ class Scanner(base.Command):
             'station_color': station_color,
             'county_color': county_color,
             'event': event,
+            'incident_details': incident_details,
             'scanner_url': f"https://{self.config['scanner_base_url']}/?id={event['id']}"
         }
 
