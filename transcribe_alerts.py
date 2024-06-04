@@ -32,7 +32,7 @@ geoloc = geopy.geocoders.GoogleV3(api_key=config['youtube_key'])
 def fix_columns():
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
-    for col in ['original_transcription', 'gpt_full_address', 'gpt_incident_details', 'gmaps_types', 'gmaps_address', 'gpt_city', 'gpt_incident_subtype', 'gmaps_location_type', 'gmaps_url', 'gpt_age', 'gpt_gender', 'gpt_incident_type', 'gpt_place']:
+    for col in ['original_transcription', 'gpt_full_address', 'gpt_incident_details', 'gmaps_types', 'gmaps_address', 'gpt_city', 'gpt_incident_subtype', 'gmaps_location_type', 'gmaps_url', 'gpt_age', 'gpt_gender', 'gpt_incident_type', 'gpt_place', 'gpt_state']:
         if col not in event_table.columns:
             event_table.create_column(col, Text)
     for col in ['gmaps_parsed', 'gpt_parsed']:
