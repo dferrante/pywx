@@ -370,7 +370,8 @@ def gpt_parse(event):
     summary = response.choices[0].message.content
     summary = json.loads(summary)
     summary['gpt_parsed'] = True
-    del summary['gpt_state']
+    if 'gpt_state' in summary:
+        del summary['gpt_state']
     return summary
 
 
