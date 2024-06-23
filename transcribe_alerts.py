@@ -374,7 +374,7 @@ def gpt_parse(event):
     summary = response.choices[0].message.content
     summary = json.loads(summary)
     summary['gpt_parsed'] = True
-    for key in summary.keys():
+    for key in list(summary.keys()):
         if key not in all_fields:
             del summary[key]
     return summary
