@@ -9,7 +9,6 @@ import tempfile
 
 import dataset
 import geopy
-from geopy.exc import GeocoderException
 import requests
 from faster_whisper import WhisperModel
 from openai import OpenAI
@@ -358,7 +357,7 @@ def geolocate(county, full_address):
             'gmaps_url': f'https://maps.google.com/?t=k&q={loc.latitude},{loc.longitude}',
             'gmaps_parsed': True,
         }
-    except GeocoderException:
+    except Exception:
         return {}
 
 
