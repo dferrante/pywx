@@ -28,6 +28,8 @@ except ImportError:
 
 geoloc = geopy.geocoders.GoogleV3(api_key=config['youtube_key'])
 
+all_fields = ['id', 'transcription', 'county', 'datetime', 'responding', 'mp3_url', 'is_transcribed', 'age', 'gender', 'town', 'address', 'symptom', 'is_irc_notified', 'original_transcription', 'is_parsed', 'gpt_full_address', 'gpt_incident_details', 'gmaps_types', 'gmaps_address', 'gpt_city', 'gpt_incident_subtype', 'gmaps_location_type', 'gmaps_url', 'gpt_age', 'gpt_gender', 'gpt_incident_type', 'gmaps_parsed', 'gpt_parsed', 'gmaps_latitude', 'gmaps_longitude', 'gpt_place', 'gpt_state']
+
 
 def fix_columns():
     database = dataset.connect(config['alerts_database'])
@@ -372,8 +374,9 @@ def gpt_parse(event):
     summary = response.choices[0].message.content
     summary = json.loads(summary)
     summary['gpt_parsed'] = True
-    if 'gpt_state' in summary:
-        del summary['gpt_state']
+    for key in summary.keys():
+        if key not in all_fields:
+            del summary[key]
     return summary
 
 
