@@ -7,12 +7,13 @@ import shutil
 import sys
 import tempfile
 
+import av
 import dataset
 import geopy
 import requests
 from faster_whisper import WhisperModel
 from openai import OpenAI
-from sqlalchemy import Text, Boolean, Integer
+from sqlalchemy import Boolean, Integer, Text
 
 from logger import get_logger
 from spelling_correct import spelling_correct
@@ -114,7 +115,11 @@ def download_and_transcribe():
                 shutil.copyfileobj(r.raw, temp_file)
 
             log.info(f'transcribing {event["mp3_url"]}')
-            segments, _ = model.transcribe(temp_file.name, beam_size=5, vad_filter=True)
+            try:
+                segments, _ = model.transcribe(temp_file.name, beam_size=5, vad_filter=True)
+            except av.error.ValueError:
+                log.warn('transcription failed for event {event["id"]} {event["mp3_url"]}')
+                segments = []
             transcription = []
             for segment in segments:
                 transcription.append(segment.text)
