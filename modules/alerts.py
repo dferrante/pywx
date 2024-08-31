@@ -17,8 +17,7 @@ class Scanner(base.Command):
     multiline = True
     template = """-------------
         {{ datetime|c('royal') }} - {{ event['county']|c(county_color) }} - {{ responding|c(station_color) }} - {{ event.id }}
-        {% if event['gpt_place'] %}{{ event['gpt_place']|c(event['vip_word_color']) }} - {% endif %}{% if event['gmaps_address'] %} {{ event['gmaps_address']|c(vip_word_color) }} {% elif full_address %} {{ full_address|c(vip_word_color) }} {% elif event.town %} {{ event.town|c(vip_word_color) }} {% elif event.address %} {{ event.address|c(vip_word_color) }} {% endif %}
-        {{ scanner_url }}
+        {% if event['gpt_place'] %}{{ event['gpt_place']|c(event['vip_word_color']) }} - {% endif %}{% if event['gmaps_address'] %} {{ event['gmaps_address']|c(vip_word_color) }} {% elif full_address %} {{ full_address|c(vip_word_color) }} {% elif event.town %} {{ event.town|c(vip_word_color) }} {% elif event.address %} {{ event.address|c(vip_word_color) }} {% endif %} {{ scanner_url }}
         {{ incident_details }}"""
 
     important_stations = ['45fire', '46fire', 'sbes', 'southbranch']
