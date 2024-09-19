@@ -32,20 +32,6 @@ geoloc = geopy.geocoders.GoogleV3(api_key=config['youtube_key'])
 all_fields = ['id', 'transcription', 'county', 'datetime', 'responding', 'mp3_url', 'is_transcribed', 'age', 'gender', 'town', 'address', 'symptom', 'is_irc_notified', 'original_transcription', 'is_parsed', 'gpt_full_address', 'gpt_incident_details', 'gmaps_types', 'gmaps_address', 'gpt_city', 'gpt_incident_subtype', 'gmaps_location_type', 'gmaps_url', 'gpt_age', 'gpt_gender', 'gpt_incident_type', 'gmaps_parsed', 'gpt_parsed', 'gmaps_latitude', 'gmaps_longitude', 'gpt_place', 'gpt_state']
 
 
-def fix_columns():
-    database = dataset.connect(config['alerts_database'])
-    event_table = database['scanner']
-    for col in ['original_transcription', 'gpt_full_address', 'gpt_incident_details', 'gmaps_types', 'gmaps_address', 'gpt_city', 'gpt_incident_subtype', 'gmaps_location_type', 'gmaps_url', 'gpt_age', 'gpt_gender', 'gpt_incident_type', 'gpt_place', 'gpt_state']:
-        if col not in event_table.columns:
-            event_table.create_column(col, Text)
-    for col in ['gmaps_parsed', 'gpt_parsed']:
-        if col not in event_table.columns:
-            event_table.create_column(col, Boolean)
-    for col in ['gmaps_latitude', 'gmaps_longitude']:
-        if col not in event_table.columns:
-            event_table.create_column(col, Integer)
-
-
 def get_mp3s():
     log.info('getting mp3s')
     database = dataset.connect(config['alerts_database'])
@@ -130,7 +116,6 @@ def download_and_transcribe():
 
 def parse_transcriptions(all_events):
     log.info('parsing transcriptions')
-    fix_columns()
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
     age_to_int = {
@@ -409,10 +394,83 @@ def gpt_parse_bulk():
             f.write(json.dumps(line) + '\n')
 
 
+def fix_columns():
+    log.info('fixing columns')
+    database = dataset.connect(config['alerts_database'])
+    event_table = database['scanner']
+    for col in ['original_transcription', 'gpt_full_address', 'gpt_incident_details', 'gmaps_types', 'gmaps_address', 'gpt_city', 'gpt_incident_subtype', 'gmaps_location_type', 'gmaps_url', 'gpt_age', 'gpt_gender', 'gpt_incident_type', 'gpt_place', 'gpt_state']:
+        if col not in event_table.columns:
+            event_table.create_column(col, Text)
+    for col in ['gmaps_parsed', 'gpt_parsed']:
+        if col not in event_table.columns:
+            event_table.create_column(col, Boolean)
+    for col in ['gmaps_latitude', 'gmaps_longitude']:
+        if col not in event_table.columns:
+            event_table.create_column(col, Integer)
+
+
+def create_fts_table():
+    log.info('creating FTS table')
+    database = dataset.connect(config['alerts_database'])
+    database.query('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS scanner_fts USING fts5(
+            responding,
+            transcription,
+            gpt_full_address,
+            gpt_incident_details,
+            gmaps_address,
+            gpt_incident_subtype,
+            gpt_place
+        );
+    ''')
+
+    # Populate the FTS table with data from the existing table
+    database.query('''
+    INSERT INTO scanner_fts (responding,
+            transcription,
+            gpt_full_address,
+            gpt_incident_details,
+            gmaps_address,
+            gpt_incident_subtype,
+            gpt_place)
+    SELECT responding,
+            transcription,
+            gpt_full_address,
+            gpt_incident_details,
+            gmaps_address,
+            gpt_incident_subtype,
+            gpt_place
+    FROM scanner;
+    ''')
+
+
+def create_indexes():
+    log.info('creating indexes')
+    database = dataset.connect(config['alerts_database'])
+    database.query("CREATE INDEX IF NOT EXISTS idx_scanner_responding ON scanner(responding)")
+    database.query("CREATE INDEX IF NOT EXISTS idx_scanner_responding_county ON scanner(responding, county)")
+    database.query("CREATE INDEX IF NOT EXISTS idx_scanner_town ON scanner(town)")
+    database.query("CREATE INDEX IF NOT EXISTS idx_scanner_town_county ON scanner(town, county)")
+    database.query("CREATE INDEX IF NOT EXISTS idx_scanner_type ON scanner(gpt_incident_type)")
+    database.query("CREATE INDEX IF NOT EXISTS idx_scanner_type_subtype ON scanner(gpt_incident_type, gpt_incident_subtype)")
+
+
+def migration():
+    log.info('running migration')
+    fix_columns()
+    create_fts_table()
+    create_indexes()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Grab and transcribe scanner traffic")
     parser.add_argument('--fullparse', action='store_true', help="Enable full parsing mode")
+    parser.add_argument('--migrate', action='store_true', help="Run database tasks")
     args = parser.parse_args()
+
+    if args.migrate:
+        migration()
+        sys.exit(0)
 
     if not args.fullparse:
         get_mp3s()
