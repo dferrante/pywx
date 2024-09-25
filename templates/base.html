@@ -133,5 +133,12 @@
             <div id="content" class="content" hx-trigger="load" hx-get="/events" hx-vals='{{ request.args|tojson }}'>Loading...</div>
         {% endif %}
         <div id="pagination_end" class="pagination" hx-swap-oob="true"></div>
+
+        <script>
+            document.body.addEventListener("scrollToTop", function(evt){
+                console.log('scrolling');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            })
+        </script>
     </body>
 </html>

@@ -24,7 +24,7 @@ important_stations = ['45fire', '46fire', 'sbes', 'southbranch']
 very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west', 'norma']
 important_words = ['clinton', 'annandale', 'school']
 
-counties = ['hunterdon', 'warren', 'morris', 'sussex']
+counties = ['hunterdon', 'warren', 'morris']
 incident_emojis = {
     'fire': '🔥',
     'medical': '🚑',
@@ -277,6 +277,7 @@ def list_events():
         args.pop('stations', None)
         sorted_args = dict(sorted(args.items()))
         response.headers['HX-Push-Url'] = f'?{urlencode(sorted_args)}'
+    response.headers['HX-Trigger-After-Swap'] = 'scrollToTop'
     return response
 
 
