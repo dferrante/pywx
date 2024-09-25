@@ -324,6 +324,8 @@ def parse_transcriptions(all_events):
         update_rows.append(event)
 
     event_table.update_many(update_rows, ['id'])
+    for event in update_rows:
+        fts_event(database, event['_id'])
     database.close()
     log.info('done')
 
@@ -407,6 +409,27 @@ def fix_columns():
     for col in ['gmaps_latitude', 'gmaps_longitude']:
         if col not in event_table.columns:
             event_table.create_column(col, Integer)
+
+
+def fts_event(database, event_id):
+    database.query('''
+    INSERT INTO scanner_fts (responding,
+            transcription,
+            gpt_full_address,
+            gpt_incident_details,
+            gmaps_address,
+            gpt_incident_subtype,
+            gpt_place)
+    SELECT responding,
+            transcription,
+            gpt_full_address,
+            gpt_incident_details,
+            gmaps_address,
+            gpt_incident_subtype,
+            gpt_place
+    FROM scanner
+    WHERE id = :event_id;
+    ''', event_id=event_id)
 
 
 def create_fts_table():
