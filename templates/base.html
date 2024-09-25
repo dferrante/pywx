@@ -107,21 +107,31 @@
                 {% if loop.revindex != 1 %} - {% endif %}
             {% endfor %}
              |
-            <span id="stations" class="link" hx-get="/stations" hx-target="#content" hx-swap-oob="true">station list</span>
-             |
-            <span id="towns" class="link" hx-get="/towns" hx-target="#content" hx-swap-oob="true">town list</span>
-             |
+            <span id="stations" class="link" hx-get="/stations" hx-target="#content" hx-swap-oob="true" hx-push-url="?stations">station list</span>
+            |
+            <span id="towns" class="link" hx-get="/towns" hx-target="#content" hx-swap-oob="true" hx-push-url="?towns">town list</span>
+            |
+            <span id="issues" class="link" hx-get="/issues" hx-target="#content" hx-swap-oob="true" hx-push-url="?issues">issues</span>
+            |
             search:
             <input id="search" class="form-control" type="search"
                 name="search" placeholder=""
                 hx-get="/events"
                 hx-trigger="input changed delay:500ms, search"
                 hx-target="#content"
-                hx-vals='{{ request.args|tojson }}'
-                hx-swap-oob="true">
+                hx-swap-oob="true"
+                hx-push-url="/?search={{ search }}">
         <br>
         <div id="pagination" class="pagination" hx-swap-oob="true"></div>
-        <div id="content" class="content" hx-trigger="load" hx-get="/events" placeholder="Loading..." hx-vals='{{ request.args|tojson }}'></div>
+        {% if 'issues' in request.args %}
+            <div id="content" class="content" hx-trigger="load" hx-get="/issues">Loading...</div>
+        {% elif 'stations' in request.args %}
+            <div id="content" class="content" hx-trigger="load" hx-get="/stations">Loading...</div>
+        {% elif 'towns' in request.args %}
+            <div id="content" class="content" hx-trigger="load" hx-get="/towns">Loading...</div>
+        {% else %}
+            <div id="content" class="content" hx-trigger="load" hx-get="/events" hx-vals='{{ request.args|tojson }}'>Loading...</div>
+        {% endif %}
         <div id="pagination_end" class="pagination" hx-swap-oob="true"></div>
     </body>
 </html>

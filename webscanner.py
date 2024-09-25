@@ -3,10 +3,11 @@ import json
 import os
 import re
 import sys
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlencode
 
 import dataset
-from flask import Flask, render_template, request, send_from_directory
+from flask import (Flask, make_response, render_template, request,
+                   send_from_directory)
 from markupsafe import Markup
 
 app = Flask(__name__)
@@ -62,6 +63,54 @@ subtype_emojis = {
     'landing': '🚁',
     'rectal': '🍑',
     'bleed': '🩸',
+    'pedestrian': '🚶',
+    'bicycle': '🚲',
+    'motorcycle': '🏍️',
+    'gunshot': '🔫',
+    'water': '🌊',
+    'bike': '🚲',
+    'intoxicated': '🍺',
+    'carbon monoxide': '💨',
+    'leak': '⛽',
+    'odor': '👃',
+    'transformer': '🔌',
+    'wires': '🔌',
+    'doa': '💀',
+    'dnr': '💀',
+    'alcohol': '🍺',
+    'allergy': '🤒',
+    'bee': '🐝',
+    'stool': '💩',
+    'broken': '🩹',
+    'cancer': '🎗️',
+    'cva': '🧠',
+    'detox': '🍺',
+    'dog': '🐕',
+    'eye': '👁️',
+    'eyes': '👁️',
+    'foot': '🦶',
+    'heat': '🔥',
+    'kidney': '🫘',
+    'leg': '🦵',
+    'hand': '🤚',
+    'arm': '🦾',
+    'truck': '🚚',
+    'car': '🚗',
+    'elevator': '🏢',
+    'nose': '👃',
+    'mouth': '👄',
+    'nausea': '🤢',
+    'pregnancy': '🤰',
+    'respiratory': '🫁',
+    'stomach': '🤢',
+    'suicidal': '🔪',
+    'suicide': '🔪',
+    'domestic': '🤜👰‍♀️🤵',
+    'hazmat': '☢️',
+    'oil': '🛢️',
+    'assault': '👊',
+    'gummy': '🍬',
+    'gummies': '🍬🍬'
 }
 
 location_type_emojis = {
@@ -71,7 +120,7 @@ location_type_emojis = {
     'APPROXIMATE': '',
 }
 
-all_fields = ['id', 'transcription', 'county', 'datetime', 'responding', 'mp3_url', 'is_transcribed', 'age', 'gender', 'town', 'address', 'symptom', 'is_irc_notified', 'original_transcription', 'is_parsed', 'gpt_full_address', 'gpt_incident_details', 'gmaps_types', 'gmaps_address', 'gpt_city', 'gpt_incident_subtype', 'gmaps_location_type', 'gmaps_url', 'gpt_age', 'gpt_gender', 'gpt_incident_type', 'gmaps_parsed', 'gpt_parsed', 'gmaps_latitude', 'gmaps_longitude', 'gpt_place']
+all_fields = ['id', 'transcription', 'county', 'datetime', 'responding', 'mp3_url', 'is_transcribed', 'age', 'gender', 'town', 'address', 'symptom', 'is_irc_notified', 'original_transcription', 'is_parsed', 'gpt_full_address', 'gpt_incident_details', 'gmaps_types', 'gmaps_address', 'gpt_city', 'gpt_incident_subtype', 'gmaps_location_type', 'gmaps_url', 'gpt_age', 'gpt_gender', 'gpt_incident_type', 'gmaps_parsed', 'gpt_parsed', 'gmaps_latitude', 'gmaps_longitude', 'gpt_place', 'gpt_state']
 
 metadata_order = {
     '': ['id', 'datetime', 'county', 'responding'],
@@ -92,7 +141,7 @@ def index():
 
 
 @app.route("/events")
-def list():
+def list_events():
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
 
@@ -112,25 +161,39 @@ def list():
             'is_transcribed': True,
         }
         if request.args.get('search'):
-            default_search['transcription'] = {'ilike': f'%{request.args["search"]}%'}
-        if request.args.get('station'):
-            default_search['responding'] = {'ilike': f'%{request.args["station"]}%'}
-        if request.args.get('county'):
-            default_search['county'] = {'ilike': f'%{request.args["county"]}%'}
-        if request.args.get('town'):
-            default_search['town'] = request.args["town"]
-        if request.args.get('place'):
-            default_search['gpt_place'] = {'ilike': f'%{request.args["place"]}%'}
+            search_query = database.query('SELECT rowid FROM scanner_fts WHERE scanner_fts MATCH :search', search=request.args["search"])
+            match_ids = [row['rowid'] for row in search_query]
+            event_count = len(match_ids)
+            default_search['id'] = {'in': match_ids}
+            default_search['_limit'] = per_page
+            default_search['_offset'] = (page - 1) * per_page
+            default_search['order_by'] = ['-datetime']
+            event_query = event_table.find(**default_search)
+        else:
+            if request.args.get('station'):
+                default_search['responding'] = {'ilike': f'%{request.args["station"]}%'}
+            if request.args.get('county'):
+                default_search['county'] = {'ilike': f'%{request.args["county"]}%'}
+            if request.args.get('town'):
+                default_search['town'] = request.args["town"]
+            if request.args.get('place'):
+                default_search['gpt_place'] = {'ilike': f'%{request.args["place"]}%'}
+            if request.args.get('type') and request.args.get('type') != 'None':
+                default_search['gpt_incident_type'] = request.args["type"]
+            if request.args.get('subtype') and request.args.get('subtype') != 'None':
+                default_search['gpt_incident_subtype'] = request.args["subtype"]
 
-        event_count = event_table.count(**default_search)
-        default_search['_limit'] = per_page
-        default_search['_offset'] = (page - 1) * per_page
-        default_search['order_by'] = ['-datetime']
-        event_query = event_table.find(**default_search)
+            event_count = event_table.count(**default_search)
+            default_search['_limit'] = per_page
+            default_search['_offset'] = (page - 1) * per_page
+            default_search['order_by'] = ['-datetime']
+            event_query = event_table.find(**default_search)
 
     prev_page = page - 1 if page > 1 else None
     next_page = page + 1 if event_count and event_count > page * per_page else None
-    last_page = event_count // per_page + 1
+    last_page = event_count // per_page
+    if last_page == 1:
+        last_page = None
 
     events = []
     for event in event_query:
@@ -147,13 +210,21 @@ def list():
         else:
             transcription = event['transcription']
 
+        punctuation_stripper = re.compile(r'[^\w\s]')
+        words = set()
+        for field in ['gpt_incident_subtype', 'gpt_incident_details', 'transcription', 'symptom']:
+            if event.get(field):
+                words.update(event.get(field, '').split(' '))
         emojis = set()
+        for word in words:
+            word = punctuation_stripper.sub('', word).lower()
+            emojis.add(subtype_emojis.get(word))
+        emojis = sorted(list(filter(None, emojis)))
+
         if incident_emojis.get(event.get('gpt_incident_type')):
-            emojis.add(incident_emojis.get(event['gpt_incident_type']))
-        if event['gpt_incident_subtype']:
-            for subtype in event['gpt_incident_subtype'].split(' '):
-                emojis.add(subtype_emojis.get(subtype))
-        emojis = filter(None, emojis)
+            incident_emoji = incident_emojis.get(event['gpt_incident_type'])
+            if incident_emoji:
+                emojis = [incident_emoji] + list(filter(lambda x: x != incident_emoji, emojis))
 
         location_emoji = location_type_emojis.get(event.get('gmaps_location_type'), '')
 
@@ -196,7 +267,17 @@ def list():
         'next_page': next_page,
         'last_page': last_page,
     }
-    return render_template('events.html', **response)
+
+    rendered_template = render_template('events.html', **response)
+    response = make_response(rendered_template)
+    if request.args:
+        args = request.args.copy()
+        args.pop('issues', None)
+        args.pop('towns', None)
+        args.pop('stations', None)
+        sorted_args = dict(sorted(args.items()))
+        response.headers['HX-Push-Url'] = f'?{urlencode(sorted_args)}'
+    return response
 
 
 @app.route('/stations')
@@ -216,7 +297,9 @@ def stations():
             stations.append((station, count))
         county_station[county] = stations
 
-    return render_template('stations.html', county_station=county_station, counties=counties)
+    rendered_template = render_template('stations.html', county_station=county_station, counties=counties)
+    response = make_response(rendered_template)
+    return response
 
 
 @app.route('/towns')
@@ -224,19 +307,31 @@ def towns():
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
 
-    county_towns = collections.defaultdict(set)
-    for event in event_table.all():
-        if event['town']:
-            county_towns[event['county']].add(event['town'])
+    distinct_pairs = event_table.distinct('county', 'town')
+    counter = collections.defaultdict(list)
+    for pair in distinct_pairs:
+        count = event_table.count(county=pair['county'], town=pair['town'])
+        counter[pair['county']].append((pair['town'], count))
 
-    for county in county_towns:
-        towns = []
-        for town in sorted(county_towns[county]):
-            count = event_table.count(town=town)
-            towns.append((town, count))
-        county_towns[county] = towns
+    rendered_template = render_template('towns.html', county_towns=counter, counties=counties)
+    response = make_response(rendered_template)
+    return response
 
-    return render_template('towns.html', county_towns=county_towns, counties=counties)
+
+@app.route('/issues')
+def issues():
+    database = dataset.connect(config['alerts_database'])
+    event_table = database['scanner']
+
+    distinct_pairs = event_table.distinct('gpt_incident_type', 'gpt_incident_subtype')
+    counter = collections.defaultdict(list)
+    for pair in distinct_pairs:
+        count = event_table.count(gpt_incident_type=pair['gpt_incident_type'], gpt_incident_subtype=pair['gpt_incident_subtype'])
+        counter[pair['gpt_incident_type']].append((pair['gpt_incident_subtype'], count))
+
+    rendered_template = render_template('issues.html', counter=counter)
+    response = make_response(rendered_template)
+    return response
 
 
 @app.route('/favicon.ico')

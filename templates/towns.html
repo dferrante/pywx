@@ -1,4 +1,4 @@
-<span id="towns" class="span_active" hx-get="/towns" hx-target="#content" hx-swap-oob="true">town list</span>
+<span id="towns" class="link_active" hx-get="/towns" hx-target="#content" hx-swap-oob="true" hx-push-url="?towns">town list</span>
 
 {% for county in counties %}
     <b>{{ county }}:</b><br>

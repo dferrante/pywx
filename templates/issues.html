@@ -1,0 +1,14 @@
+<span id="issues" class="link_active" hx-get="/issues" hx-target="#content" hx-swap-oob="true" hx-push-url="?issues">issue list</span>
+
+{% for type in counter %}
+    <b><span class="link" hx-get="/events?type={{ type }}" hx-target="#content">{{ type }}</span>:</b><br>
+    <table>
+    {% for subtype in counter[type] %}
+        <tr>
+            <td><span class="link" hx-get="/events?type={{ type }}&subtype={{ subtype[0] }}" hx-target="#content">{{ subtype[0] }}</span></td>
+            <td>[{{ subtype[1] }}]</td>
+        </tr>
+    {% endfor %}
+    </table>
+    <br>
+{% endfor %}

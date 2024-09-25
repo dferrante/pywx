@@ -4,15 +4,21 @@
 {% endfor %}
 
 {% if request.args.get('station') %}
-    <span id="stations" class="link_active" hx-get="/stations" hx-target="#content" hx-swap-oob="true">station list [{{ request.args.get('station') }}]</span>
+    <span id="stations" class="link_active" hx-get="/stations" hx-target="#content" hx-swap-oob="true" hx-push-url="?stations">station list [{{ request.args.get('station') }}]</span>
 {% else %}
-    <span id="stations" class="link" hx-get="/stations" hx-target="#content" hx-swap-oob="true">station list</span>
+    <span id="stations" class="link" hx-get="/stations" hx-target="#content" hx-swap-oob="true" hx-push-url="?stations">station list</span>
 {% endif %}
 
 {% if request.args.get('town') %}
-    <span id="towns" class="link_active" hx-get="/towns" hx-target="#content" hx-swap-oob="true">town list [{{ request.args.get('town') }}]</span>
+    <span id="towns" class="link_active" hx-get="/towns" hx-target="#content" hx-swap-oob="true" hx-push-url="?towns">town list [{{ request.args.get('town') }}]</span>
 {% else %}
-    <span id="towns" class="link" hx-get="/towns" hx-target="#content" hx-swap-oob="true">town list</span>
+    <span id="towns" class="link" hx-get="/towns" hx-target="#content" hx-swap-oob="true" hx-push-url="?towns">town list</span>
+{% endif %}
+
+{% if request.args.get('type') %}
+    <span id="issues" class="link_active" hx-get="/issues" hx-target="#content" hx-swap-oob="true" hx-push-url="?issues">issues [{{ request.args.get('type') }}{% if request.args.get('subtype') %}/{{ request.args['subtype'] }}{% endif %}]</span>
+{% else %}
+    <span id="issues" class="link" hx-get="/issues" hx-target="#content" hx-swap-oob="true" hx-push-url="?issues">issues</span>
 {% endif %}
 
 <div id="pagination" class="pagination" hx-swap-oob="#pagination">
@@ -54,8 +60,9 @@
             {% endfor %}
     </div>
 
+    <div class="emoji">{% for emoji in event['emojis'] %}{{ emoji }}{% endfor %}</div>
+
     {% if event.event['gpt_incident_details'] %}
-        <div class="emoji">{% for emoji in event['emojis'] %}{{ emoji }}{% endfor %}</div>
         <div class="transcription">
             {% if event.age_and_gender %}
                 {{ event.age_and_gender }} -
