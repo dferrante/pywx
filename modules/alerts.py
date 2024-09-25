@@ -1,5 +1,4 @@
 import re
-from urllib.parse import quote_plus
 
 import dataset
 
@@ -16,9 +15,9 @@ def highlight(text, phrase):
 class Scanner(base.Command):
     multiline = True
     template = """-------------
-        {{ datetime|c('royal') }} - {{ event['county']|c(county_color) }} - {{ responding|c(station_color) }} - {{ event.id }}
-        {% if event['gpt_place'] %}{{ event['gpt_place']|c(event['vip_word_color']) }} - {% endif %}{% if event['gmaps_address'] %} {{ event['gmaps_address']|c(vip_word_color) }} {% elif full_address %} {{ full_address|c(vip_word_color) }} {% elif event.town %} {{ event.town|c(vip_word_color) }} {% elif event.address %} {{ event.address|c(vip_word_color) }} {% endif %} {{ scanner_url }}
-        {{ incident_details }}"""
+        {{ datetime|c('royal') }} - {{ event['county']|c(county_color) }} - {{ responding|c(station_color) }} - {{ event.id|c('grey') }}
+        {% if event['gpt_place'] %}{{ event['gpt_place']|c(vip_word_color) }} - {% endif %}{% if event['gmaps_address'] %} {{ event['gmaps_address']|c(vip_word_color) }} {% elif full_address %} {{ full_address|c(vip_word_color) }} {% elif event.town %} {{ event.town|c(vip_word_color) }} {% elif event.address %} {{ event.address|c(vip_word_color) }} {% endif %} - {{ scanner_url }}
+        {{ incident_type|c('aqua') }}: {{ incident_details }}"""
 
     important_stations = ['45fire', '46fire', 'sbes', 'southbranch']
     very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west', 'norma']
@@ -58,16 +57,21 @@ class Scanner(base.Command):
         age_and_gender = ''
         if event['gpt_incident_details']:
             if event['gpt_age'] and event['gpt_age'] not in event['gpt_incident_details']:
-                age_and_gender += f"{event['gpt_age']}yo "
+                if event['gpt_age'].isdigit():
+                    age_and_gender += f"{event['gpt_age']}yo "
+                else:
+                    age_and_gender += f"{event['gpt_age']} "
             if event['gpt_gender'] and event['gpt_gender'] not in event['gpt_incident_details']:
                 age_and_gender += f"{event['gpt_gender']}"
             if age_and_gender:
                 age_and_gender += " - "
+
             subtype = f"/{event['gpt_incident_subtype']}" if event['gpt_incident_subtype'] else ''
-            incident_details = f"{event['gpt_incident_type']}{subtype}: {age_and_gender}{event['gpt_incident_details']}"
+            incident_type = f"{event['gpt_incident_type']}{subtype}"
+            incident_details = f"{age_and_gender}{event['gpt_incident_details']}"
         else:
             subtype = f"/{event['gpt_incident_subtype']}" if event['gpt_incident_subtype'] else ''
-            incident_details = f"{event['gpt_incident_type']}{subtype}"
+            incident_type = f"{event['gpt_incident_type']}{subtype}"
 
         payload = {
             'datetime': time,
@@ -77,15 +81,15 @@ class Scanner(base.Command):
             'station_color': station_color,
             'county_color': county_color,
             'event': event,
+            'incident_type': incident_type,
             'incident_details': incident_details,
             'scanner_url': f"https://{self.config['scanner_base_url']}/?id={event['id']}"
         }
 
+        event['gmaps_address'] = re.sub(r',\s*NJ\s*(\d{5})?,\s*USA$', '', event['gmaps_address'])
         if event['address'] and event['town']:
             full_address = f"{event['address']}, {event['town']}, NJ"
-            gmaps_url = f'https://www.google.com/maps/place/{quote_plus(full_address)}/data=!3m1!1e3'
             payload['full_address'] = full_address
-            payload['gmaps_url'] = gmaps_url
 
         return payload
 
