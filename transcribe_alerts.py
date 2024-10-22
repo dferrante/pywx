@@ -89,7 +89,7 @@ def download_and_transcribe():
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
 
-    model = WhisperModel("large-v2", device="cpu", compute_type="int8", download_root="data/whisper")
+    model = WhisperModel("large-v2", download_root="data/whisper")
     for event in event_table.find(is_transcribed=False, order_by=['datetime']):
         if event['datetime'] < (datetime.datetime.now() - datetime.timedelta(days=5)):
             log.debug(f'event {event["id"]} too old, skipping')
@@ -378,7 +378,7 @@ def gpt_parse_bulk():
     system_prompt = """Your goal is to take the transcription of an ems and fire dept call from NJ, and separate out the full address and include the state, what the incident is about, the age, and gender, all in unique fields, and return it in json format.  be succinct. if fields cannot be found, return null.  fields should be: 'full_address', 'incident_type', 'incident_subtype', 'age', 'gender', 'city', 'place', and 'incident_details'.  incident_type field should be all lowercase and should be one of: medical, fire, accident, fall victim, police, or other.  fall victims also include people needing a lift assist.  incident_subtype should be a concise short simple one or two word string about the type of the incident if it is medical.  incident_details field should have a summary of any information about the incident, and should omit hours, address, age, gender, and responding stations.  if the city is not found, derive it from the responding station.  do not include cross streets.  city should be in full_address and also in its own field. the place field should be the naum of a place, like a business, school, hospital, etc.  the output should be json with no markdown, and prefix the json keys with 'gpt_'"""
 
     with open('data/events.jsonl', 'w') as f:
-        for event in event_table.find(gpt_parsed=False):
+        for event in event_table.all():
             responding = ', '.join(event['responding'].split(','))
             event_text = f"Responding stations: {responding}\nTranscription: {event['transcription']}"
             line = {
@@ -489,7 +489,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Grab and transcribe scanner traffic")
     parser.add_argument('--fullparse', action='store_true', help="Enable full parsing mode")
     parser.add_argument('--migrate', action='store_true', help="Run database tasks")
+    parser.add_argument('--bulk-parse', action='store_true', help="Output the bulk file")
     args = parser.parse_args()
+
+    if args.bulk_parse:
+        gpt_parse_bulk()
+        sys.exit(0)
 
     if args.migrate:
         migration()
