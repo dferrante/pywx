@@ -378,7 +378,7 @@ def gpt_parse_bulk():
     system_prompt = """Your goal is to take the transcription of an ems and fire dept call from NJ, and separate out the full address and include the state, what the incident is about, the age, and gender, all in unique fields, and return it in json format.  be succinct. if fields cannot be found, return null.  fields should be: 'full_address', 'incident_type', 'incident_subtype', 'age', 'gender', 'city', 'place', and 'incident_details'.  incident_type field should be all lowercase and should be one of: medical, fire, accident, fall victim, police, or other.  fall victims also include people needing a lift assist.  incident_subtype should be a concise short simple one or two word string about the type of the incident if it is medical.  incident_details field should have a summary of any information about the incident, and should omit hours, address, age, gender, and responding stations.  if the city is not found, derive it from the responding station.  do not include cross streets.  city should be in full_address and also in its own field. the place field should be the naum of a place, like a business, school, hospital, etc.  the output should be json with no markdown, and prefix the json keys with 'gpt_'"""
 
     with open('data/events.jsonl', 'w') as f:
-        for event in event_table.all():
+        for event in event_table.find(gpt_parsed=False):
             responding = ', '.join(event['responding'].split(','))
             event_text = f"Responding stations: {responding}\nTranscription: {event['transcription']}"
             line = {
