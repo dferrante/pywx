@@ -72,6 +72,7 @@ class Scanner(base.Command):
         else:
             subtype = f"/{event['gpt_incident_subtype']}" if event['gpt_incident_subtype'] else ''
             incident_type = f"{event['gpt_incident_type']}{subtype}"
+            incident_details = ""
 
         payload = {
             'datetime': time,
