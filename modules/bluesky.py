@@ -31,7 +31,7 @@ class BlueskyParser(ParserCommand):
                         client.login(self.config['bluesky_username'],
                                      self.config['bluesky_password'])
 
-                        # Resolve handle to DID
+                        # resolve handle to DID
                         res = client.com.atproto.identity.resolve_handle(
                             {'handle': handle})
                         did = res['did']
@@ -44,7 +44,7 @@ class BlueskyParser(ParserCommand):
                             0
                         })
 
-                        # Extract post content
+                        # extract post content
                         content = post_thread['thread']['post']['record'][
                             'text']
                         display_handle = irc_color(f'@{handle}',
