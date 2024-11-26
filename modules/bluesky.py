@@ -38,7 +38,7 @@ class BlueskyParser(ParserCommand):
                         # extract post content
                         content = post_thread['thread']['post']['record']['text']
                         display_handle = irc_color(f'@{handle}', 'blue', reset=True)
-                        lines.append(f"{display_handle}: {content}")
+                        lines.append(f"{irc_color(display_handle, 'royal')}: {content}")
 
                     except Exception: #nosec
                         pass
