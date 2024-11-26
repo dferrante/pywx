@@ -52,9 +52,12 @@ def get_mp3s():
         group_in_seconds = 30
         for mp3_url in mp3s:
             try:
-                parsed_url = re.search(r"https://dispatchalert.net/(?P<county>[^/]+)/(?P<unit>[^/_]+)__?(?P<datetime>[\d_]+).mp3", mp3_url).groupdict()
+                if county == 'somerset':
+                    parsed_url = re.search(r"https://dispatchalert.net/(?P<county>[^/]+)/(?P<unit>[\w-]*?)(?=_-_)_-_([a-z0-9]{5,})_(?P<datetime>[\d_]+).mp3", mp3_url).groupdict()
+                else:
+                    parsed_url = re.search(r"https://dispatchalert.net/(?P<county>[^/]+)/(?P<unit>[^/_]+)__?(?P<datetime>[\d_]+).mp3", mp3_url).groupdict()
             except AttributeError:
-                continue
+                log.warn('could not parse url: %s', mp3_url)
             parsed_url['unit'] = ' '.join(parsed_url['unit'].split('-'))
             parsed_url['mp3_url'] = mp3_url
             parsed_url['datetime'] = datetime.datetime.strptime(parsed_url['datetime'], "%Y_%m_%d_%H_%M_%S")
