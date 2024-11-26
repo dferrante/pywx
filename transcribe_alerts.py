@@ -37,7 +37,7 @@ def get_mp3s():
     database = dataset.connect(config['alerts_database'])
     event_table = database['scanner']
 
-    for county in ['hunterdon', 'morris', 'warren', 'sussex']:
+    for county in ['hunterdon', 'morris', 'warren', 'sussex', 'somerset']:
         mp3s = []
         alerts_url = f'https://dispatchalert.group//includes/js/flat.audio.{county}.js'
         resp = requests.get(alerts_url, timeout=60)
@@ -336,6 +336,7 @@ def geolocate(county, full_address):
         'morris': [(-74.95349930842227,41.03973731989822), (-74.18804986518307,40.66243060070209)],
         'warren': [(-75.34714596046982,41.06402566152515), (-74.67510691546788,40.62637616797859)],
         'sussex': [(-75.05845242057806,41.36071447694682), (-74.29917269700853,40.94262863833735)],
+        'somerset': [(-74.747542,40.758636), (-74.376494, 40.359894)],
     }
 
     try:
