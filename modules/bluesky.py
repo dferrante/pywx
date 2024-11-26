@@ -1,7 +1,5 @@
 from urllib.parse import urlparse, unquote
-
 from atproto import Client
-
 from .base import ParserCommand, irc_color
 from .registry import register_parser
 
@@ -28,19 +26,34 @@ class BlueskyParser(ParserCommand):
                         client = Client()
                         client.login(self.config['bluesky_username'], self.config['bluesky_password'])
 
-                        # resolve handle to DID
                         res = client.com.atproto.identity.resolve_handle({'handle': handle})
                         did = res['did']
 
                         uri = f"at://{did}/app.bsky.feed.post/{post_rkey}"
                         post_thread = client.app.bsky.feed.get_post_thread({'uri': uri, 'depth': 0})
 
-                        # extract post content
-                        content = post_thread['thread']['post']['record']['text']
+                        # handle post
+                        record = post_thread['thread']['post']['record']
+                        content = record.get('text', '')
                         display_handle = irc_color(f'@{handle}', 'blue', reset=True)
-                        lines.append(f"{display_handle}: {content}")
+                        line = f"{display_handle}: {content}"
 
-                    except Exception: #nosec
+                        # handle images
+                        images = record.get('images', [])
+                        if images:
+                            image_urls = [img.get('url') for img in images if img.get('url')]
+                            if image_urls:
+                                line += " " + " ".join(image_urls)
+
+                        # handle external links
+                        if record.get('external'):
+                            external_url = record['external'].get('uri')
+                            if external_url:
+                                line += f" {external_url}"
+
+                        lines.append(line)
+
+                    except Exception:
                         pass
 
         return lines
