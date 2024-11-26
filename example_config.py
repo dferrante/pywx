@@ -16,7 +16,9 @@ config = {
     "redlink_pass": '',
     "youtube_key": "",
     "imgur_id": "",
-    "imgur_secret": "",    
-	"twitch_client": "",
-	"twitch_secret": "",
+    "imgur_secret": "",
+    "twitch_client": "",
+    "twitch_secret": "",
+    "bluesky_username": "",
+    "bluesky_password": "",
 }
