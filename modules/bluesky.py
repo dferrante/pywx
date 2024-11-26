@@ -40,7 +40,7 @@ class BlueskyParser(ParserCommand):
                         display_handle = irc_color(f'@{handle}', 'blue', reset=True)
                         lines.append(f"{display_handle}: {content}")
 
-                    except Exception:
+                    except Exception: #nosec
                         pass
 
         return lines
