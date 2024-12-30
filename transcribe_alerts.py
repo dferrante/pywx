@@ -439,6 +439,7 @@ def fts_event(database, event_id):
 def create_fts_table():
     log.info('creating FTS table')
     database = dataset.connect(config['alerts_database'])
+    database.query('DROP TABLE IF EXISTS scanner_fts;')
     database.query('''
         CREATE VIRTUAL TABLE IF NOT EXISTS scanner_fts USING fts5(
             responding,
