@@ -130,7 +130,7 @@
         {% elif 'towns' in request.args %}
             <div id="content" class="content" hx-trigger="load" hx-get="/towns">Loading...</div>
         {% else %}
-            <div id="content" class="content" hx-trigger="load" hx-get="/events" hx-vals='{{ request.args|tojson }}'>Loading...</div>
+            <div id="content" class="content" hx-trigger="load" hx-get="/events?{{ request.args|urlencode }}">Loading...</div>
         {% endif %}
         <div id="pagination_end" class="pagination" hx-swap-oob="true"></div>
 
