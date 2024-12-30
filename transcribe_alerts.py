@@ -480,6 +480,7 @@ def create_indexes():
     database.query("CREATE INDEX IF NOT EXISTS idx_scanner_town_county ON scanner(town, county)")
     database.query("CREATE INDEX IF NOT EXISTS idx_scanner_type ON scanner(gpt_incident_type)")
     database.query("CREATE INDEX IF NOT EXISTS idx_scanner_type_subtype ON scanner(gpt_incident_type, gpt_incident_subtype)")
+    database.query("CREATE INDEX IF NOT EXISTS idx_scanner_gmaps_lat_lon ON scanner(gmaps_latitude, gmaps_longitude)")
 
 
 def migration():

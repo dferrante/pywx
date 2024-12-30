@@ -20,9 +20,9 @@ except ImportError:
     sys.exit()
 
 repeating_regex = re.compile(r"(?P<first>.*)(Repeating|Paging|Again|repeating|paging|again)[\s.,]+(?P<repeat>.*)")
-important_stations = ['45fire', '46fire', 'sbes', 'southbranch']
-very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west', 'norma']
-important_words = ['clinton', 'annandale', 'school']
+important_stations = config.get('important_stations', [])
+very_important_words = config.get('very_important_words', [])
+important_words = config.get('important_words', [])
 
 counties = ['hunterdon', 'warren', 'morris', 'somerset']
 incident_emojis = {
@@ -169,6 +169,15 @@ def list_events():
             default_search['_offset'] = (page - 1) * per_page
             default_search['order_by'] = ['-datetime']
             event_query = event_table.find(**default_search)
+        elif request.args.get('latlon'):
+            lat, lon = request.args['latlon'].split(',')
+            event_count = event_table.count(gmaps_latitude=lat, gmaps_longitude=lon)
+            default_search['gmaps_latitude'] = lat
+            default_search['gmaps_longitude'] = lon
+            default_search['_limit'] = per_page
+            default_search['_offset'] = (page - 1) * per_page
+            default_search['order_by'] = ['-datetime']
+            event_query = event_table.find(**default_search)
         else:
             if request.args.get('station'):
                 default_search['responding'] = {'ilike': f'%{request.args["station"]}%'}
@@ -226,8 +235,6 @@ def list_events():
             if incident_emoji:
                 emojis = [incident_emoji] + list(filter(lambda x: x != incident_emoji, emojis))
 
-        location_emoji = location_type_emojis.get(event.get('gmaps_location_type'), '')
-
         age_and_gender = []
         if event['gpt_incident_details']:
             if event['gpt_age'] and event['gpt_age'] not in event['gpt_incident_details']:
@@ -235,6 +242,12 @@ def list_events():
             if event['gpt_gender'] and event['gpt_gender'] not in event['gpt_incident_details']:
                 age_and_gender.append(event['gpt_gender'])
         age_and_gender = ' '.join(age_and_gender)
+
+        location_emoji = location_type_emojis.get(event.get('gmaps_location_type'), '')
+        if event['gmaps_location_type'] == 'ROOFTOP':
+            location_count = event_table.count(gmaps_latitude=event['gmaps_latitude'], gmaps_longitude=event['gmaps_longitude'])
+        else:
+            location_count = 0
 
         payload = {
             'datetime': time,
@@ -245,6 +258,7 @@ def list_events():
             'emojis': emojis,
             'location_emoji': location_emoji,
             'age_and_gender': age_and_gender,
+            'location_count': location_count,
         }
 
         if event['address'] and event['town']:
