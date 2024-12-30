@@ -206,7 +206,8 @@ def list_events():
 
     events = []
     for event in event_query:
-        time = event['datetime'].strftime('%m/%d %-I:%M%p')
+        time = event['datetime'].strftime('%-m/%-d/%y %-I:%M%p')
+        time = time.lower()
         responding = sorted(event['responding'].split(','))
         vip_word_color = '#fa7516' if any([word in event['transcription'].lower() for word in important_words if word]) and event['county'] == 'hunterdon' else '#3c99cf'
         vip_word_color = 'red' if any([word in event['transcription'].lower() for word in very_important_words if word]) and event['county'] == 'hunterdon' else vip_word_color
