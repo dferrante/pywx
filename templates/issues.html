@@ -1,4 +1,4 @@
-<span id="issues" class="link_active" hx-get="/issues" hx-target="#content" hx-swap-oob="true" hx-push-url="?issues">issue list</span>
+<span id="issues" class="link_active" hx-get="/issues" hx-target="#content" hx-swap-oob="true">issue list</span>
 
 {% for type in counter %}
     <b><span class="link" hx-get="/events?type={{ type }}" hx-target="#content">{{ type }}</span>:</b><br>

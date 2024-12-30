@@ -314,6 +314,7 @@ def stations():
 
     rendered_template = render_template('stations.html', county_station=county_station, counties=counties)
     response = make_response(rendered_template)
+    response.headers['HX-Push-Url'] = '?stations'
     return response
 
 
@@ -330,6 +331,7 @@ def towns():
 
     rendered_template = render_template('towns.html', county_towns=counter, counties=counties)
     response = make_response(rendered_template)
+    response.headers['HX-Push-Url'] = '?towns'
     return response
 
 
@@ -346,6 +348,7 @@ def issues():
 
     rendered_template = render_template('issues.html', counter=counter)
     response = make_response(rendered_template)
+    response.headers['HX-Push-Url'] = '?issues'
     return response
 
 

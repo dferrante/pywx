@@ -101,17 +101,17 @@
     </head>
     <body>
         <div>
-            <span id="county-all" class="link_active" hx-get="/events" hx-target="#content" hx-swap-oob="true" hx-push-url="/">all</span> -
+            <span id="county-all" class="link_active" hx-get="/events" hx-target="#content" hx-swap-oob="true">all</span> -
             {% for county in counties %}
-                <span id="county-{{ county }}" class="link" hx-get="/?county={{ county }}" hx-target="#content" hx-swap-oob="true" hx-push-url="/?county={{ county }}">{{ county }}</span>
+                <span id="county-{{ county }}" class="link" hx-get="/?county={{ county }}" hx-target="#content" hx-swap-oob="true">{{ county }}</span>
                 {% if loop.revindex != 1 %} - {% endif %}
             {% endfor %}
              |
-            <span id="stations" class="link" hx-get="/stations" hx-target="#content" hx-swap-oob="true" hx-push-url="?stations">station list</span>
+            <span id="stations" class="link" hx-get="/stations" hx-target="#content" hx-swap-oob="true">station list</span>
             |
-            <span id="towns" class="link" hx-get="/towns" hx-target="#content" hx-swap-oob="true" hx-push-url="?towns">town list</span>
+            <span id="towns" class="link" hx-get="/towns" hx-target="#content" hx-swap-oob="true">town list</span>
             |
-            <span id="issues" class="link" hx-get="/issues" hx-target="#content" hx-swap-oob="true" hx-push-url="?issues">issues</span>
+            <span id="issues" class="link" hx-get="/issues" hx-target="#content" hx-swap-oob="true">issues</span>
             |
             search:
             <input id="search" class="form-control" type="search"
@@ -119,8 +119,7 @@
                 hx-get="/events"
                 hx-trigger="input changed delay:500ms, search"
                 hx-target="#content"
-                hx-swap-oob="true"
-                hx-push-url="/?search={{ search }}">
+                hx-swap-oob="true">
         <br>
         <div id="pagination" class="pagination" hx-swap-oob="true"></div>
         {% if 'issues' in request.args %}
