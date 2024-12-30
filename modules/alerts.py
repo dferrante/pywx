@@ -14,16 +14,18 @@ def highlight(text, phrase):
 
 class Scanner(base.Command):
     multiline = True
-    template = """-------------
-        {{ datetime|c('royal') }} - {{ event['county']|c(county_color) }} - {{ responding|c(station_color) }} - {{ event.id|c('grey') }}
+    template = """{% if not no_line_break %}-------------{% endif %}
+        {{ datetime|c('royal') }} - {{ event['county']|c(county_color) }} - {{ responding|c(station_color) }}{% if location_count > 1 %} - {{ location_count|c('green') }}{% endif %} - {{ event.id|c('grey') }}
         {% if event['gpt_place'] %}{{ event['gpt_place']|c(vip_word_color) }} - {% endif %}{% if event['gmaps_address'] %} {{ event['gmaps_address']|c(vip_word_color) }} {% elif full_address %} {{ full_address|c(vip_word_color) }} {% elif event.town %} {{ event.town|c(vip_word_color) }} {% elif event.address %} {{ event.address|c(vip_word_color) }} {% endif %} - {{ scanner_url }}
         {{ incident_type|c('aqua') }}: {{ incident_details }}"""
 
-    important_stations = ['45fire', '46fire', 'sbes', 'southbranch']
-    very_important_words = ['studer', 'sunrise', 'austin hill', 'foundations', 'apollo', 'foxfire', 'river bend', 'grayrock', 'greyrock', 'beaver', 'lower west', 'norma']
-    important_words = ['clinton', 'annandale', 'school']
-
     repeating_regex = re.compile(r"(?P<first>.*)(Repeating|Paging|Again|repeating|paging|again)[\s.,]+(?P<repeat>.*)")
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.important_stations = self.config.get('important_stations', [])
+        self.very_important_words = self.config.get('very_important_words', [])
+        self.important_words = self.config.get('important_words', [])
 
     def load_filters(self):
         super().load_filters()
@@ -34,6 +36,16 @@ class Scanner(base.Command):
             index = text.index(town)
             return text[index + len(town):].lstrip(',').lstrip('.').strip()
         return text
+
+    def location_count(self, event):
+        if event['gmaps_location_type'] == 'ROOFTOP':
+            database = dataset.connect(self.config['alerts_database'])
+            event_table = database['scanner']
+            location_count = event_table.count(gmaps_latitude=event['gmaps_latitude'], gmaps_longitude=event['gmaps_longitude'])
+            database.close()
+        else:
+            location_count = 0
+        return location_count
 
     def event_context(self, event):
         time = event['datetime'].strftime('%-I:%M%p')
@@ -82,6 +94,7 @@ class Scanner(base.Command):
             'station_color': station_color,
             'county_color': county_color,
             'event': event,
+            'location_count': self.location_count(event),
             'incident_type': incident_type,
             'incident_details': incident_details,
             'scanner_url': f"https://{self.config['scanner_base_url']}/?id={event['id']}"
@@ -131,4 +144,6 @@ class LastScanner(Scanner):
         else:
             event = event_table.find_one(is_transcribed=True, is_parsed=True, order_by=['-datetime'])
         database.close()
-        return self.event_context(event)
+        context = self.event_context(event)
+        context['no_line_break'] = True
+        return context
