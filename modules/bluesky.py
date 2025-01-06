@@ -37,6 +37,14 @@ class BlueskyParser(ParserCommand):
 
                         # extract post content
                         content = post_thread['thread']['post']['record']['text']
+                        try:
+                            images = post_thread['thread']['post']['embed']['images']
+                            if len(images) == 1:
+                                content += f" {images[0]['fullsize']}"
+                            elif len(images) > 1:
+                                content += f" {images[0]['fullsize']} +{len(images) - 1} more"
+                        except TypeError:
+                            pass
                         display_handle = irc_color(f'@{handle}', 'blue', reset=True)
                         lines = f"{irc_color(display_handle, 'orange')}: {content}".split('\n')
                         lines = filter(None, lines)
