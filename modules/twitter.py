@@ -63,6 +63,10 @@ class TwitterParser(ParserCommand):
                     tweet = self.fetch_tweet(twid)
                     text = tweet['text']
 
+                    if tweet['quoted_tweet']:
+                        qt_url = f"https://twitter.com/{tweet['quoted_tweet']['user']['screen_name']}/status/{tweet['quoted_tweet']['id_str']}"
+                        text += f" {qt_url}"
+
                     tweetlines = []
                     for tweetline in text.split('\n'):
                         if not tweetline:

@@ -45,7 +45,8 @@ if __name__ == '__main__':
     reg.load_modules(config)
 
     # test_command('lastalert', '35169')
-    test_parser('https://bsky.app/profile/staceyhood.bsky.social/post/3lbsehmeft22r')
+    # test_parser('https://bsky.app/profile/staceyhood.bsky.social/post/3lbsehmeft22r')
+    test_parser('https://x.com/bigsnugga/status/1877231016248492083')
     # test_periodic_command(config, "scanner")
     # test_periodic_command(config, "scanner")
     # test_periodic_command(config, "scanner")
