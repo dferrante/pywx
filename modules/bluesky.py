@@ -43,7 +43,17 @@ class BlueskyParser(ParserCommand):
                                 content += f" {images[0]['fullsize']}"
                             elif len(images) > 1:
                                 content += f" {images[0]['fullsize']} +{len(images) - 1} more"
-                        except TypeError:
+                        except Exception: #nosec
+                            pass
+                        try:
+                            if 'embed.video' in post_thread['thread']['post']['embed']['media']['py_type']:
+                                content += " [+video]"
+                        except Exception: #nosec
+                            pass
+                        try:
+                            if 'embed.external' in post_thread['thread']['post']['embed']['external']['py_type']:
+                                content += f" {post_thread['thread']['post']['embed']['external']['uri']}"
+                        except Exception: #nosec
                             pass
                         display_handle = irc_color(f'@{handle}', 'blue', reset=True)
                         lines = f"{irc_color(display_handle, 'orange')}: {content}".split('\n')
