@@ -1,15 +1,16 @@
-FROM python:3.10-slim
+FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim
 
 # install system requirements
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get -qq update \
     && apt-get -qq install --no-install-recommends \
-    ffmpeg gcc git supervisor nginx curl
+    ffmpeg gcc supervisor nginx curl
 
 # install python requirements
-RUN pip install -U pip setuptools
-COPY requirements.txt .
-RUN python -V && pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN uv sync --no-dev --locked --compile-bytecode
+
+ENV PATH="/.venv/bin:$PATH"
 
 # copy application files
 COPY forecastio forecastio/
