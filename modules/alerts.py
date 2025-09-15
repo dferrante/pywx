@@ -15,7 +15,7 @@ def highlight(text, phrase):
 class Scanner(base.Command):
     multiline = True
     template = """{% if not no_line_break %}-------------{% endif %}
-        {{ datetime|c('royal') }} - {{ event['county']|c(county_color) }} - {{ responding|c(station_color) }}{% if location_count > 1 %} - {{ location_count|c('green') }}{% endif %} - {{ event.id|c('grey') }}
+        {{ datetime|c('teal') }} - {{ event['county']|c(county_color) }} - {{ responding|c(station_color) }}{% if location_count > 1 %} - {{ location_count|c('green') }}{% endif %} - {{ event.id|c('grey') }}
         {% if event['gpt_place'] %}{{ event['gpt_place']|c(vip_word_color) }} - {% endif %}{% if event['gmaps_address'] %} {{ event['gmaps_address']|c(vip_word_color) }} {% elif full_address %} {{ full_address|c(vip_word_color) }} {% elif event.town %} {{ event.town|c(vip_word_color) }} {% elif event.address %} {{ event.address|c(vip_word_color) }} {% endif %} - {{ scanner_url }}
         {{ incident_type|c('aqua') }}: {{ incident_details }}"""
 
@@ -53,12 +53,12 @@ class Scanner(base.Command):
         if event['county'] == 'hunterdon':
             county_color = 'pink'
             station_color = 'red' if any([station in event['responding'].lower() for station in self.important_stations]) else 'orange'
-            vip_word_color = 'yellow' if any([word in event['transcription'].lower() for word in self.important_words if word]) else 'royal'
+            vip_word_color = 'yellow' if any([word in event['transcription'].lower() for word in self.important_words if word]) else 'teal'
             vip_word_color = 'red' if any([word in event['transcription'].lower() for word in self.very_important_words if word]) else vip_word_color
         else:
             county_color = 'orange'
             station_color = 'orange'
-            vip_word_color = 'royal'
+            vip_word_color = 'teal'
 
         repeat_search = self.repeating_regex.search(event['transcription'])
         if repeat_search:
