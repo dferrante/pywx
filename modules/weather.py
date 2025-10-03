@@ -21,7 +21,6 @@ from .registry import register
 wind_directions = [(11.25, 'N'), (33.75, 'NNE'), (56.25, 'NE'), (78.75, 'ENE'), (101.25, 'E'), (123.75, 'ESE'),
                    (146.25, 'SE'), (168.75, 'SSE'), (191.25, 'S'), (213.75, 'SSW'), (236.25, 'SW'), (258.75, 'WSW'),
                    (281.25, 'W'), (303.75, 'WNW'), (326.25, 'NW'), (348.75, 'NNW'), (360, 'N')]
-hic = [0, -42.379, 2.04901523, 10.14333127, -0.22475541, -6.83783 * (10.0**-3.0), -5.481717 * (10.0**-2.0), 1.22874 * (10.0**-3.0), 8.5282 * (10.0**-4.0), -1.99 * (10.0**-6.0)]
 moon_phases = [
     (0.0625, 'New'), (0.1875, 'Waxing Crescent'), (0.3125, 'First Quarter'), (0.4375, 'Waxing Gibbous'), (0.5625, 'Full'),
     (0.6875, 'Waning Gibbous'), (0.8125, 'Last Quarter'), (0.9375, 'Waning Crescent'), (1, 'New'),
@@ -57,6 +56,7 @@ def wind_chill_si(temp, wind):
 
 
 def heat_index(temp, hum):
+    hic = [0, -42.379, 2.04901523, 10.14333127, -0.22475541, -6.83783 * (10.0**-3.0), -5.481717 * (10.0**-2.0), 1.22874 * (10.0**-3.0), 8.5282 * (10.0**-4.0), -1.99 * (10.0**-6.0)]
     return round(hic[1] + (hic[2] * temp) + (hic[3] * hum) + (hic[4] * temp * hum) + (hic[5] * (temp**2)) + (hic[6] * (hum**2)) + (hic[7] * (temp**2) * hum) + (hic[8] * temp * (hum**2)) + (hic[9] * (temp**2) * (hum**2)), 1)
 
 
@@ -97,7 +97,7 @@ alert_colors = (
     ('wind', 'aqua'),
     ('special', 'null'),
 )
-temp_colors = ((-100, 'pink'), (15, 'pink'), (32, 'royal'), (50, 'green'), (65, 'lime'), (75, 'yellow'), (85, 'orange'), (150, 'red'))
+temp_colors = ((-100, 'pink'), (15, 'pink'), (32, 'royal'), (50, 'green'), (65, 'lime'), (75, 'yellow'), (85, 'orange'), (200, 'red'))
 dewpoint_colors = ((-100, 'royal'), (15, 'green'), (60, 'lime'), (65, 'yellow'), (70, 'orange'), (75, 'red'), (150, 'red'))
 aqi_colors = ((-100, 'green'), (50, 'yellow'), (100, 'orange'), (150, 'red'), (200, 'purple'), (300, 'maroon'))
 spark_graph = list("▁▂▃▅▇")
@@ -226,7 +226,7 @@ class BaseWeather(base.Command):
 
     def get_units(self, unitset):
         unitobj = collections.namedtuple("UnitSet", 'wind, dist, temp, intensity, accum, press, time_fmt')
-        if unitset == 'us':
+        if unitset == 'us' or unitset == 'au':
             return unitobj('mph', 'mi', 'F', 'in/hr', 'in', 'mbar', '%I:%M:%S%p')
         if unitset == 'si':
             return unitobj('kph', 'km', 'C', 'mm/hr', 'cm', 'hPa', '%H:%M:%S')
@@ -696,7 +696,7 @@ class Locate(BaseWeather):
 
     def get_elevation(self, latlng):
         try:
-            req = requests.get(self.elevation_api, params={'locations': ','.join(map(str, latlng))})
+            req = requests.get(self.elevation_api, params={'locations': ','.join(map(str, latlng))}, timeout=10)
             if req.status_code != 200:
                 return None
             json = req.json()
@@ -732,7 +732,7 @@ class Eclipse(BaseWeather):
             'mobile': 0
         }
         try:
-            req = requests.get(self.eclipse_api, params=params)
+            req = requests.get(self.eclipse_api, params=params, timeout=10)
             if req.status_code != 200:
                 return None
             json = req.json()
